@@ -1,0 +1,123 @@
+/* estilos-globales.css */
+@import url('https://fonts.googleapis.com/css2?family=Outfit:wght@400;500;600;700&display=swap');
+
+:root {
+    /* Paleta de Identidad - Institucional Elegante */
+    --nazareno-fondo: #f8fafc; /* Gris/azulado muy claro y limpio */
+    --nazareno-primario: #1e3a8a; /* Azul marino profundo (Seriedad y confianza) */
+    --nazareno-primario-hover: #1e40af; /* Azul marino ligeramente más claro */
+    --nazareno-texto: #334155; /* Gris pizarra oscuro (más suave que el negro) */
+    --nazareno-texto-secundario: #64748b; /* Gris medio para textos de apoyo */
+    --nazareno-borde: #e2e8f0; /* Gris muy claro para divisiones sutiles */
+    --nazareno-blanco: #ffffff; 
+    
+    /* Variables de sombras suaves y profesionales */
+    --sombra-tarjeta: 0 4px 6px -1px rgba(0, 0, 0, 0.05), 0 2px 4px -1px rgba(0, 0, 0, 0.03);
+    --sombra-boton: 0 1px 3px 0 rgba(0, 0, 0, 0.1), 0 1px 2px 0 rgba(0, 0, 0, 0.06);
+    --sombra-flotante: 0 10px 15px -3px rgba(0, 0, 0, 0.1), 0 4px 6px -2px rgba(0, 0, 0, 0.05);
+}
+
+* {
+    margin: 0;
+    padding: 0;
+    box-sizing: border-box;
+    font-family: 'Outfit', sans-serif;
+}
+
+body {
+    background-color: var(--nazareno-fondo); 
+    color: var(--nazareno-texto);
+    padding: 40px;
+    font-size: 15px; /* Tamaño de lectura cómodo */
+}
+
+/* =========================================
+   BOTONES
+   ========================================= */
+
+/* Botón Primario */
+.btn-primario {
+    background-color: var(--nazareno-primario); 
+    color: white;
+    border: 1px solid transparent; 
+    padding: 10px 20px;
+    border-radius: 6px; /* Curvas más sutiles y formales */
+    cursor: pointer;
+    font-weight: 600; 
+    font-size: 14px;
+    letter-spacing: 0.3px;
+    box-shadow: var(--sombra-boton);
+    transition: all 0.2s ease; 
+}
+
+.btn-primario:hover {
+    background-color: var(--nazareno-primario-hover); 
+    box-shadow: 0 4px 6px -1px rgba(30, 58, 138, 0.2); /* Sombra azulada sutil al pasar el mouse */
+    transform: translateY(-1px); /* Elevación muy elegante */
+}
+
+.btn-primario:active {
+    transform: translateY(0);
+    box-shadow: none;
+}
+
+/* Botón Secundario */
+.btn-secundario { 
+    background-color: var(--nazareno-blanco); 
+    color: var(--nazareno-texto); 
+    border: 1px solid #cbd5e1; /* Borde sutil */
+    padding: 10px 20px; 
+    border-radius: 6px; 
+    cursor: pointer; 
+    font-weight: 600;
+    font-size: 14px;
+    box-shadow: var(--sombra-boton);
+    transition: all 0.2s ease; 
+}
+
+.btn-secundario:hover { 
+    background-color: #f1f5f9; 
+    border-color: #94a3b8;
+}
+
+.btn-secundario:active {
+    background-color: #e2e8f0;
+    box-shadow: none;
+}
+
+/* Botón de Icono Topbar */
+.btn-icono-topbar { 
+    background: transparent; 
+    border: 1px solid transparent; 
+    font-size: 18px; 
+    color: var(--nazareno-texto-secundario); 
+    cursor: pointer; 
+    padding: 8px 12px;
+    border-radius: 6px;
+    transition: all 0.2s ease; 
+}
+
+.btn-icono-topbar:hover { 
+    background-color: #f1f5f9;
+    color: var(--nazareno-primario);
+}
+
+/* Variante de peligro para el ícono de la barra superior (Cerrar sesión) */
+.btn-icono-topbar.peligro {
+    color: #ef4444; 
+    margin-left: 10px;
+}
+
+.btn-icono-topbar.peligro:hover {
+    background-color: #fef2f2;
+    color: #dc2626;
+}
+
+/* =========================================
+   UTILIDADES GLOBALES
+   ========================================= */
+.oculto { display: none !important; }
+
+.sidebar.colapsado { width: 0; overflow: hidden; }
+/* Contenedores centrados para formularios */
+.tarjeta-centrada { max-width: 800px; margin: 0 auto 20px auto; }

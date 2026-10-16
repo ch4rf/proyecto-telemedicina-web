@@ -1,0 +1,172 @@
+-- ==========================================
+-- MÓDULO: SEGURIDAD Y AUDITORÍA
+-- ==========================================
+
+CREATE TABLE roles (
+    id_rol SERIAL PRIMARY KEY, -- SERIAL reemplaza a IDENTITY(1,1)
+    nombre_rol VARCHAR(50) UNIQUE NOT NULL
+);
+
+CREATE TABLE usuarios (
+    id_usuario SERIAL PRIMARY KEY,
+    nombre_usuario VARCHAR(50) UNIQUE NOT NULL,
+    id_rol INT NOT NULL,
+    password_hash VARCHAR(255) NOT NULL, -- Reemplaza VARBINARY, guardará el hash de Node.js
+    CONSTRAINT fk_usuarios_roles FOREIGN KEY (id_rol) REFERENCES roles (id_rol)
+);
+
+-- Tu nueva tabla de bitácora centralizada
+CREATE TABLE auditoria_general (
+    id_auditoria SERIAL PRIMARY KEY,
+    nombre_tabla VARCHAR(100) NOT NULL,
+    id_registro INT NOT NULL,
+    accion VARCHAR(20) NOT NULL, -- Ej: 'INSERT', 'UPDATE', 'DELETE'
+    usuario_accion VARCHAR(50) NOT NULL,
+    datos_anteriores JSONB, -- Formato JSON nativo de PostgreSQL
+    datos_nuevos JSONB,
+    fecha_hora TIMESTAMP DEFAULT CURRENT_TIMESTAMP -- Reemplaza GETDATE()
+);
+
+-- ==========================================
+-- MÓDULO: CATÁLOGOS LOCALES (Independientes)
+-- ==========================================
+
+-- Reemplaza a Geo_Asentamientos, simplificada para uso local
+CREATE TABLE cat_zonas_sectores (
+    id_zona SERIAL PRIMARY KEY,
+    nombre_zona VARCHAR(100) NOT NULL
+);
+
+CREATE TABLE cat_estado_miembro (
+    id_estado SERIAL PRIMARY KEY,
+    descripcion VARCHAR(50) NOT NULL
+);
+
+CREATE TABLE cat_genero (
+    id_genero SERIAL PRIMARY KEY,
+    descripcion VARCHAR(50) NOT NULL
+);
+
+CREATE TABLE cat_lugares_iglesia (
+    id_lugar SERIAL PRIMARY KEY,
+    nombre VARCHAR(50) NOT NULL,
+    requiere_anfitrion BOOLEAN DEFAULT FALSE -- BOOLEAN reemplaza a BIT
+);
+
+CREATE TABLE cat_ministerios (
+    id_ministerio SERIAL PRIMARY KEY,
+    nombre VARCHAR(100) NOT NULL
+);
+
+CREATE TABLE cat_motivo_retiro (
+    id_motivo SERIAL PRIMARY KEY,
+    descripcion VARCHAR(50) NOT NULL
+);
+
+CREATE TABLE cat_profesiones (
+    id_profesion SERIAL PRIMARY KEY,
+    descripcion VARCHAR(100) NOT NULL
+);
+
+CREATE TABLE cat_tipo_actividad (
+    id_tipo SERIAL PRIMARY KEY,
+    descripcion VARCHAR(50) NOT NULL
+);
+
+CREATE TABLE cat_tipo_duracion (
+    id_tipo_duracion SERIAL PRIMARY KEY,
+    descripcion VARCHAR(50) NOT NULL,
+    requiere_hora BOOLEAN DEFAULT FALSE
+);
+
+CREATE TABLE cat_tipo_recepcion (
+    id_recepcion SERIAL PRIMARY KEY,
+    descripcion VARCHAR(50) NOT NULL
+);
+
+-- ==========================================
+-- MÓDULO: MEMBRESÍA Y HOGARES
+-- ==========================================
+
+-- Tabla de Familias (Reemplazamos ID_Asentamiento por la nueva tabla de zonas)
+CREATE TABLE familias (
+    id_familia SERIAL PRIMARY KEY,
+    primer_apellido VARCHAR(50) NOT NULL,
+    segundo_apellido VARCHAR(50),
+    nombre_familia VARCHAR(100) NOT NULL,
+    id_zona INT, 
+    calle_avenida VARCHAR(100),
+    referencia_casa VARCHAR(200),
+    fecha_registro TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    CONSTRAINT fk_familias_zonas FOREIGN KEY (id_zona) REFERENCES cat_zonas_sectores (id_zona)
+);
+
+-- Tabla de Miembros
+CREATE TABLE miembros (
+    id_miembro SERIAL PRIMARY KEY,
+    id_familia INT,
+    rol_familiar VARCHAR(50),
+    dpi VARCHAR(20),
+    nombres VARCHAR(100) NOT NULL,
+    apellidos VARCHAR(100) NOT NULL,
+    id_genero INT,
+    fecha_nacimiento DATE,
+    id_profesion INT,
+    telefono VARCHAR(20),
+    correo VARCHAR(100),
+    fecha_bautismo DATE,
+    fecha_recepcion DATE,
+    id_recepcion INT,
+    id_estado INT,
+    id_motivo_retiro INT,
+    fecha_retiro DATE,
+    
+    -- Relaciones con el núcleo familiar y catálogos
+    CONSTRAINT fk_miembros_familias FOREIGN KEY (id_familia) REFERENCES familias (id_familia),
+    CONSTRAINT fk_miembros_genero FOREIGN KEY (id_genero) REFERENCES cat_genero (id_genero),
+    CONSTRAINT fk_miembros_profesion FOREIGN KEY (id_profesion) REFERENCES cat_profesiones (id_profesion),
+    CONSTRAINT fk_miembros_recepcion FOREIGN KEY (id_recepcion) REFERENCES cat_tipo_recepcion (id_recepcion),
+    CONSTRAINT fk_miembros_estado FOREIGN KEY (id_estado) REFERENCES cat_estado_miembro (id_estado),
+    CONSTRAINT fk_miembros_retiro FOREIGN KEY (id_motivo_retiro) REFERENCES cat_motivo_retiro (id_motivo)
+);
+
+-- ==========================================
+-- MÓDULO: MINISTERIOS
+-- ==========================================
+
+CREATE TABLE miembros_ministerios_historial (
+    id_historial SERIAL PRIMARY KEY,
+    id_miembro INT NOT NULL,
+    id_ministerio INT NOT NULL,
+    cargo VARCHAR(50),
+    fecha_inicio DATE,
+    fecha_fin DATE,
+    estado_activo BOOLEAN DEFAULT TRUE,
+    
+    -- Relaciones
+    CONSTRAINT fk_mmh_miembros FOREIGN KEY (id_miembro) REFERENCES miembros (id_miembro),
+    CONSTRAINT fk_mmh_ministerios FOREIGN KEY (id_ministerio) REFERENCES cat_ministerios (id_ministerio)
+);
+
+-- ==========================================
+-- MÓDULO: ACTIVIDADES
+-- ==========================================
+
+CREATE TABLE actividades (
+    id_actividad SERIAL PRIMARY KEY,
+    id_ministerio INT,
+    id_tipo INT,
+    fecha DATE,
+    id_tipo_duracion INT,
+    hora_inicio TIME,
+    hora_fin TIME,
+    id_lugar INT,
+    id_miembro_anfitrion INT,
+    
+    -- Relaciones
+    CONSTRAINT fk_actividades_ministerios FOREIGN KEY (id_ministerio) REFERENCES cat_ministerios (id_ministerio),
+    CONSTRAINT fk_actividades_tipo FOREIGN KEY (id_tipo) REFERENCES cat_tipo_actividad (id_tipo),
+    CONSTRAINT fk_actividades_duracion FOREIGN KEY (id_tipo_duracion) REFERENCES cat_tipo_duracion (id_tipo_duracion),
+    CONSTRAINT fk_actividades_lugar FOREIGN KEY (id_lugar) REFERENCES cat_lugares_iglesia (id_lugar),
+    CONSTRAINT fk_actividades_anfitrion FOREIGN KEY (id_miembro_anfitrion) REFERENCES miembros (id_miembro)
+);

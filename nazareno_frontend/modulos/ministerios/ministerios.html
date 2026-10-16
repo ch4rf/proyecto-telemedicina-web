@@ -1,0 +1,254 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Ministerios - Gestión Nazareno</title>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <link rel="stylesheet" href="../../css/estilos-globales.css">
+    <link rel="stylesheet" href="../familias/familias.css"> 
+</head>
+<body class="layout-app">
+
+    <div id="menu-lateral-dinamico"></div>
+
+    <main class="contenido-principal">
+        <header class="topbar">
+            <div class="topbar-izq">
+                <button id="btnToggleMenu" class="btn-icono-topbar"><i class="fas fa-bars"></i></button>
+                <h2 style="color: #1e293b; margin-left: 15px;">Gestión de Ministerios</h2>
+            </div>
+            <div class="usuario-info">
+                <span id="badge-rol-usuario" class="badge-admin">Cargando...</span>
+                <span id="nombre-usuario-pantalla" style="font-weight: 600; margin-left: 10px; margin-right: 5px;"></span>
+                <i class="fas fa-user-circle fa-2x" style="color: #94a3b8;"></i>
+                <button id="btnCerrarSesion" class="btn-icono-topbar peligro" title="Cerrar Sesión">
+                    <i class="fas fa-sign-out-alt"></i>
+                </button>
+            </div>
+        </header>
+
+        <div class="area-trabajo">
+            <div class="contenedor-split">
+                
+                <div class="columna-maestra">
+                    <div id="vistaTabla" class="tarjeta-modulo">
+                        <header class="encabezado-flex">
+                            <div style="display: flex; align-items: center; gap: 10px;">
+                                <h2 style="color: #8b5cf6; font-size: 18px;"><i class="fas fa-hands-praying"></i> Ministerios</h2>
+                            </div>
+                            
+                            <!-- BOTONES MODIFICADOS: Se agregó el botón de Generar Reporte -->
+                            <div style="display: flex; gap: 10px;">
+                                <button id="btnAbrirModalReporteMin" class="btn-secundario" style="padding: 6px 12px; font-size: 13px;">
+                                    <i class="fas fa-file-pdf" style="color: #dc2626;"></i> Generar Reporte
+                                </button>
+                                <button id="btnAbrirModalNuevoMin" class="btn-primario" style="background-color: #8b5cf6; border-color: #8b5cf6; padding: 6px 12px; font-size: 13px;">
+                                    <i class="fas fa-plus"></i> Nuevo
+                                </button>
+                            </div>
+                        </header>
+                        <div class="contenedor-tabla">
+                            <table class="tabla-estilizada">
+                                <thead><tr><th>Ministerio / Departamento</th></tr></thead>
+                                <tbody id="cuerpoTablaMinisterios"></tbody>
+                            </table>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="columna-detalle">
+                    <div class="tarjeta-modulo">
+                        <header class="encabezado-flex">
+                            <h2 style="color: #2563eb; font-size: 18px;"><span id="nombreMinisterioSeleccionado">Seleccione un Ministerio</span></h2>
+                            
+                            <div style="display:flex; gap:10px; align-items:center;">
+                                <button id="btnAbrirArchivo" class="btn-secundario" style="padding: 6px 12px; font-size:13px;" >
+                                    <i class="fas fa-archive"></i> Archivo Histórico
+                                </button>
+                                <button id="btnAsignarMinisterio" class="btn-primario" style="background-color: #2563eb; border-color: #2563eb; padding: 6px 12px; font-size: 13px;" >
+                                    <i class="fas fa-user-plus"></i> Asignar
+                                </button>
+                            </div>
+                        </header>
+                        
+                        <div class="contenedor-tabla">
+                            <table class="tabla-estilizada">
+                                <thead>
+                                    <tr>
+                                        <th>Estado</th>
+                                        <th>Nombre y Apellido</th>
+                                        <th>Cargo</th>
+                                        <th>Baja</th>
+                                    </tr>
+                                </thead>
+                                <tbody id="cuerpoTablaHistorial">
+                                    <tr><td colspan="4" style="text-align: center; color: #9ca3af; padding: 30px;">Selecciona un ministerio de la izquierda.</td></tr>
+                                </tbody>
+                            </table>
+                        </div>
+                    </div>
+                </div>
+
+            </div>
+        </div>
+    </main>
+
+    <!-- Modal Asignar Servidores -->
+    <div id="modalAsignacionMinisterio" class="modal-oculto">
+        <div class="modal-contenido" style="max-width: 700px;">
+            <div class="encabezado-perfil">
+                <h3 style="margin:0; font-size:18px; color: #1e293b;"><i class="fas fa-users-viewfinder"></i> Añadir Servidores</h3>
+                <button type="button" id="btnCerrarModalAsignacion" style="border:none; background:none; font-size:20px; cursor:pointer;"><i class="fas fa-times"></i></button>
+            </div>
+            
+            <div style="margin-top: 20px;">
+                <div class="grupo-input" style="margin-bottom: 15px;">
+                    <label>Fecha de Inicio para todos los seleccionados</label>
+                    <input type="date" id="inputFechaInicioCargo" class="input-estilizado">
+                </div>
+
+                <div class="grupo-input">
+                    <div style="position: relative;">
+                        <i class="fas fa-search" style="position: absolute; left: 12px; top: 12px; color: #94a3b8;"></i>
+                        <input type="text" id="inputBuscarMiembro" class="input-estilizado" placeholder="Buscar para vincular..." style="padding-left: 35px;">
+                    </div>
+                </div>
+
+                <div style="max-height: 250px; overflow-y: auto; border: 1px solid #e2e8f0; border-radius: 8px; padding: 5px; background: #f8fafc;">
+                    <ul id="listaBuscadorMiembros" style="list-style: none; padding: 0; margin: 0;"></ul>
+                </div>
+            </div>
+
+            <div class="acciones-formulario">
+                <button type="button" id="btnCancelarAsignacion" class="btn-secundario">Cancelar</button>
+                <button type="button" id="btnGuardarAsignacion" class="btn-primario" style="background-color: #8b5cf6; border-color: #8b5cf6;">
+                    <i class="fas fa-save"></i> Guardar Asignación
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Modal CRUD Ministerio -->
+    <div id="modalFormMinisterio" class="modal-oculto">
+        <div class="modal-contenido" style="max-width: 400px;">
+            <div class="encabezado-perfil">
+                <h3 id="tituloModalMin" style="margin:0; font-size:18px; color: #1e293b;">Nuevo Ministerio</h3>
+            </div>
+            <div style="margin-top: 20px;">
+                <div class="grupo-input">
+                    <label>Nombre del Ministerio / Departamento *</label>
+                    <input type="text" id="inputNombreMin" class="input-estilizado" placeholder="Ej. Ministerio de Alabanza" required>
+                </div>
+            </div>
+            <div class="acciones-formulario" style="margin-top: 20px;">
+                <button type="button" id="btnCancelarFormMin" class="btn-secundario">Cancelar</button>
+                <button type="button" id="btnGuardarMin" class="btn-primario" style="background-color: #8b5cf6; border-color: #8b5cf6;">Guardar</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Modal Archivo Histórico -->
+    <div id="modalArchivoHistorico" class="modal-oculto">
+        <div class="modal-archivo-contenido">
+            <div class="encabezado-perfil" style="padding: 15px 20px; border-bottom: 1px solid #e2e8f0; background: #f8fafc;">
+                <h3 style="margin:0; font-size:18px; color: #1e293b;"><i class="fas fa-archive"></i> Archivo Histórico: <span id="nombreMinArchivo"></span></h3>
+                <button type="button" id="btnCerrarArchivo" style="border:none; background:none; font-size:20px; cursor:pointer;"><i class="fas fa-times"></i></button>
+            </div>
+            
+            <div class="archivo-layout">
+                <div class="archivo-sidebar">
+                    <h4 style="font-size: 12px; color:#64748b; margin-top:0; margin-bottom: 10px; text-transform: uppercase;">Seleccionar Año</h4>
+                    <div id="contenedorAnios">
+                        </div>
+                </div>
+                
+                <div class="archivo-main">
+                    <div class="contenedor-tabla" style="max-height: 400px; overflow-y: auto;">
+                        <table class="tabla-estilizada">
+                            <thead>
+                                <tr>
+                                    <th>Servidor/a</th>
+                                    <th>Cargo</th>
+                                    <th>Período de Servicio</th>
+                                </tr>
+                            </thead>
+                            <tbody id="cuerpoTablaArchivo">
+                                </tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- NUEVO: MODAL GENERADOR DE REPORTES DE MINISTERIOS -->
+    <div id="modalReporteMinisterios" class="modal-oculto">
+        <div class="modal-contenido" style="max-width: 650px;">
+            <div class="encabezado-perfil">
+                <h3 style="margin:0; font-size:18px; color: #1e293b;"><i class="fas fa-file-pdf" style="color: #dc2626;"></i> Generar Reporte PDF</h3>
+            </div>
+            
+            <div style="margin-top: 20px;">
+                <!-- Controles de Filtro -->
+                <div class="grid-2-columnas" style="margin-bottom: 15px;">
+                    <div class="grupo-input">
+                        <label>Ministerio / Departamento</label>
+                        <select id="selectFiltroMinisterioReporte" class="selector-estilizado">
+                            <option value="TODOS">Todos los Ministerios</option>
+                            <!-- JS llenará esto -->
+                        </select>
+                    </div>
+                    <div class="grupo-input">
+                        <label>Estado de Servidores</label>
+                        <select id="selectFiltroEstadoReporte" class="selector-estilizado">
+                            <option value="ACTIVOS">Solo Activos (Directorio Actual)</option>
+                            <option value="HISTORICO">Solo Histórico (Bajas y Ex-servidores)</option>
+                            <option value="TODOS">Todos (Activos e Histórico)</option>
+                        </select>
+                    </div>
+                </div>
+
+                <!-- Selector de Año (Oculto por defecto) -->
+                <div id="contenedorFiltroAnioReporte" class="grupo-input oculto" style="margin-bottom: 15px;">
+                    <label>Filtrar por Año de Gestión (Aplica a histórico)</label>
+                    <select id="selectFiltroAnioReporte" class="selector-estilizado">
+                        <option value="TODOS">Todos los años</option>
+                    </select>
+                </div>
+
+                <!-- Barra de selección rápida -->
+                <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 10px; padding: 0 5px;">
+                    <span style="font-size: 13px; color: #64748b; font-weight: 600;" id="contadorServidoresFiltrados">0 servidores encontrados</span>
+                    <label style="font-size: 13px; color: #8b5cf6; cursor: pointer; font-weight: 600; display: flex; align-items: center; gap: 6px; user-select: none;">
+                        <input type="checkbox" id="checkSeleccionarTodosMinReporte" style="cursor: pointer; width: 16px; height: 16px;">
+                        Seleccionar todos los de la lista
+                    </label>
+                </div>
+
+                <!-- Lista de Servidores Filtrados -->
+                <div style="max-height: 230px; overflow-y: auto; border: 1px solid #e2e8f0; border-radius: 8px; padding: 5px; background: #f8fafc;">
+                    <ul id="listaServidoresReporte" style="list-style: none; padding: 0; margin: 0;">
+                        <!-- JS inyectará los <li> aquí -->
+                    </ul>
+                </div>
+            </div>
+
+            <div class="acciones-formulario">
+                <button type="button" id="btnCancelarReporteMin" class="btn-secundario">Cancelar</button>
+                <button type="button" id="btnExportarPDFMin" class="btn-primario" style="background-color: #8b5cf6; border-color: #8b5cf6;">
+                    <i class="fas fa-download"></i> Exportar PDF
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Librerías para Exportar PDF -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf-autotable/3.5.31/jspdf.plugin.autotable.min.js"></script>
+
+    <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
+    <script src="../../js/seguridad.js"></script>
+    <script type="module" src="ministerios.js"></script>
+</body>
+</html>

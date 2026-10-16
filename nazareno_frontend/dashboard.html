@@ -1,0 +1,149 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Dashboard - Gestión Nazareno</title>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <link rel="stylesheet" href="css/estilos-globales.css">
+    <link rel="stylesheet" href="css/dashboard.css">
+</head>
+<body class="layout-dashboard">
+
+    <div id="menu-lateral-dinamico"></div>
+
+    <main class="contenido-principal">
+        <header class="topbar">
+            <div class="topbar-izq">
+                <button id="btnToggleMenu" class="btn-icono-topbar"><i class="fas fa-bars"></i></button>
+                <div>
+                    <h2 style="color: var(--nazareno-texto); margin-left: 15px; margin-bottom: 0;">Panel de Control</h2>
+                    <p style="color: #64748b; font-size: 14px; margin-left: 15px; margin-top: 0; font-weight: 600;">Bienvenido al sistema de administración</p>
+                </div>
+            </div>
+            
+            <div class="usuario-info">
+                <span id="badge-rol-usuario" class="badge-admin">Cargando...</span>
+                <span id="nombre-usuario-pantalla" style="font-weight: 700; margin-left: 10px; margin-right: 5px;"></span>
+                <i class="fas fa-user-circle fa-2x" style="color: #94a3b8;"></i>
+                <button id="btnCerrarSesion" class="btn-icono-topbar peligro" title="Cerrar Sesión">
+                    <i class="fas fa-sign-out-alt"></i>
+                </button>
+            </div>
+        </header>
+
+        <!-- AGREGAMOS AREA-TRABAJO PARA CENTRAR TODO -->
+        <div class="area-trabajo">
+            
+            <h3 class="titulo-seccion">Accesos Rápidos</h3>
+            <div class="grid-tarjetas">
+                <a href="modulos/miembros/miembros.html" class="tarjeta-acceso azul">
+                    <i class="fas fa-users fa-3x"></i>
+                    <h3>Directorio de Miembros</h3>
+                    <p>Gestión de expedientes y membresía</p>
+                </a>
+                <a href="modulos/familias/familias.html" class="tarjeta-acceso naranja">
+                    <i class="fas fa-home-user fa-3x"></i>
+                    <h3>Familias</h3>
+                    <p>Núcleos familiares y hogares</p>
+                </a>
+                <a href="modulos/ministerios/ministerios.html" class="tarjeta-acceso verde">
+                    <i class="fas fa-hands-praying fa-3x"></i>
+                    <h3>Ministerios</h3>
+                    <p>Líderes y asignaciones ministeriales</p>
+                </a>
+                <a href="modulos/actividades/actividades.html" class="tarjeta-acceso morado">
+                    <i class="fas fa-calendar-alt fa-3x"></i>
+                    <h3>Actividades</h3>
+                    <p>Calendario y programación de eventos</p>
+                </a>
+                <a href="modulos/catalogos/catalogos.html" class="tarjeta-acceso gris">
+                    <i class="fas fa-cogs fa-3x"></i>
+                    <h3>Catálogos del Sistema</h3>
+                    <p>Mantenimiento de zonas, profesiones, etc.</p>
+                </a>
+            </div>
+
+            <!-- ========================================== -->
+            <!-- NUEVA SECCIÓN: ESTADÍSTICAS DEL DASHBOARD -->
+            <!-- ========================================== -->
+            <div id="contenedor-estadisticas" style="margin-top: 40px; display: none;">
+                <h3 class="titulo-seccion">Métricas de la Congregación</h3>
+                
+                <div class="grid-kpis">
+                    <div class="tarjeta-kpi">
+                        <h4>Miembros Activos</h4>
+                        <h2 id="kpi-miembros">0</h2>
+                    </div>
+                    <div class="tarjeta-kpi">
+                        <h4>Familias Registradas</h4>
+                        <h2 id="kpi-familias">0</h2>
+                    </div>
+                    <div class="tarjeta-kpi">
+                        <h4>Servidores Activos</h4>
+                        <h2 id="kpi-servidores">0</h2>
+                    </div>
+                    <div class="tarjeta-kpi">
+                        <h4>Involucramiento</h4>
+                        <h2 id="kpi-involucramiento">0%</h2>
+                    </div>
+                </div>
+
+                <!-- Gráficos Demográficos -->
+                <div class="grid-graficos">
+                    <div class="tarjeta-grafico">
+                        <h4>Género</h4>
+                        <div class="contenedor-canvas">
+                            <canvas id="graficoGenero"></canvas>
+                        </div>
+                    </div>
+                    <div class="tarjeta-grafico">
+                        <h4>Edades</h4>
+                        <div class="contenedor-canvas">
+                            <canvas id="graficoEdades"></canvas>
+                        </div>
+                    </div>
+                    <div class="tarjeta-grafico">
+                        <h4>Altas vs Bajas (Año Actual)</h4>
+                        <div class="contenedor-canvas">
+                            <canvas id="graficoTendencias"></canvas>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Zonas, Ministerios y Alertas -->
+                <div class="grid-inferior">
+                    <div class="tarjeta-grafico">
+                        <h4>Top Ministerios</h4>
+                        <div class="contenedor-canvas">
+                            <canvas id="graficoMinisterios"></canvas>
+                        </div>
+                    </div>
+                    
+                    <div class="tarjeta-alerta">
+                        <h4 class="alerta-azul"><i class="fas fa-birthday-cake"></i> Cumpleaños del Mes</h4>
+                        <ul id="lista-cumpleanos">
+                            <!-- Se llena con JS -->
+                        </ul>
+                    </div>
+
+                    <div class="tarjeta-alerta">
+                        <h4 class="alerta-morada"><i class="fas fa-calendar-check"></i> Próximas Actividades</h4>
+                        <ul id="lista-actividades">
+                            <!-- Se llena con JS -->
+                        </ul>
+                    </div>
+                </div>
+            </div>
+
+        </div> <!-- Fin de .area-trabajo -->
+    </main>
+
+    <!-- Tus scripts -->
+    <script src="js/seguridad.js"></script>
+    <script type="module" src="js/dashboard.js"></script> 
+
+</body>
+</html>
+

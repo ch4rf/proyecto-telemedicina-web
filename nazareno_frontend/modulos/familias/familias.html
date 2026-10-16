@@ -1,0 +1,229 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Familias - Gestión Nazareno</title>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <link rel="stylesheet" href="../../css/estilos-globales.css">
+    <link rel="stylesheet" href="familias.css">
+</head>
+<body class="layout-app">
+
+    <div id="menu-lateral-dinamico"></div>
+
+    <main class="contenido-principal">
+        <header class="topbar">
+            <div class="topbar-izq">
+                <button id="btnToggleMenu" class="btn-icono-topbar"><i class="fas fa-bars"></i></button>
+                <h2 style="color: #1e293b; margin-left: 15px;">Módulo de Familias</h2>
+            </div>
+            <div class="usuario-info">
+                <span id="badge-rol-usuario" class="badge-admin">Cargando...</span>
+                <span id="nombre-usuario-pantalla" style="font-weight: 600; margin-left: 10px; margin-right: 5px;"></span>
+                <i class="fas fa-user-circle fa-2x" style="color: #94a3b8;"></i>
+                <button id="btnCerrarSesion" class="btn-icono-topbar peligro" title="Cerrar Sesión">
+                    <i class="fas fa-sign-out-alt"></i>
+                </button>
+            </div>
+        </header>
+
+        <div class="area-trabajo">
+            <div class="contenedor-split">
+                
+                <div class="columna-maestra">
+                    <div id="vistaTabla" class="tarjeta-modulo">
+                        <header class="encabezado-flex">
+                            <div style="display: flex; align-items: center; gap: 10px;">
+                                <h2 style="color: #f59e0b; font-size: 18px;"><i class="fas fa-home-user"></i> Familias</h2>
+                                <span id="contadorFamilias" class="badge-contador">0</span>
+                            </div>
+                            
+                            <!-- BOTONES MODIFICADOS: Se agregó el botón de Generar Reporte -->
+                            <div style="display: flex; gap: 10px;">
+                                <button id="btnAbrirModalReporte" class="btn-secundario" style="padding: 6px 12px; font-size: 13px;">
+                                    <i class="fas fa-file-pdf" style="color: #dc2626;"></i> Generar Reporte
+                                </button>
+                                <button id="btnMostrarFormulario" class="btn-primario" style="background-color: #f59e0b; border-color: #f59e0b; padding: 6px 12px; font-size: 13px;">
+                                    <i class="fas fa-plus"></i> Agregar Familia
+                                </button>
+                            </div>
+                        </header>
+
+                        <div class="contenedor-tabla">
+                            <table class="tabla-estilizada">
+                                <thead>
+                                    <tr>
+                                        <th>#</th>
+                                        <th>Familia</th>
+                                        <th>Asentamiento / Sector</th>
+                                        <th>Acciones</th>
+                                    </tr>
+                                </thead>
+                                <tbody id="cuerpoTablaFamilias"></tbody>
+                            </table>
+                        </div>
+                    </div>
+
+                    <div id="vistaFormulario" class="tarjeta-modulo oculto">
+                        <header class="encabezado-flex">
+                            <h2 style="font-size: 16px;"><i class="fas fa-users-rectangle"></i> <span id="tituloFormulario">Nueva Familia</span></h2>
+                        </header>
+                        <form id="formularioFamilia">
+                            <div class="grupo-input">
+                                <label>Primer Apellido *</label>
+                                <input type="text" id="inputPrimerApellido" class="input-estilizado" required>
+                            </div>
+                            <div class="grupo-input">
+                                <label>Segundo Apellido</label>
+                                <input type="text" id="inputSegundoApellido" class="input-estilizado">
+                            </div>
+                            <div class="grupo-input">
+                                <label>Nombre de la Familia (Automático)</label>
+                                <input type="text" id="inputNombreFamilia" class="input-estilizado" readonly style="background-color: #f8fafc; color: #475569;">
+                            </div>
+                            <div class="grupo-input">
+                                <label>Asentamiento / Sector *</label>
+                                <select id="selectZona" class="selector-estilizado" required></select>
+                            </div>
+                            <div class="grupo-input">
+                                <label>Calle o Avenida</label>
+                                <input type="text" id="inputCalle" class="input-estilizado" placeholder="Ej. 4ta Avenida Lote 12">
+                            </div>
+                            <div class="grupo-input">
+                                <label>Referencia del Hogar</label>
+                                <input type="text" id="inputReferencia" class="input-estilizado" placeholder="Color de casa, comercios...">
+                            </div>
+                            <div class="acciones-formulario">
+                                <button type="button" id="btnCancelarFormulario" class="btn-secundario">Cancelar</button>
+                                <button type="submit" class="btn-primario" style="background-color: #f59e0b; border-color: #f59e0b;">Guardar</button>
+                            </div>
+                        </form>
+                    </div>
+                </div>
+
+                <div class="columna-detalle">
+                    <div class="tarjeta-modulo">
+                        <header class="encabezado-flex">
+                            <h2 style="color: #2563eb; font-size: 18px;"><i class="fas fa-users"></i> Integrantes: <span id="nombreFamiliaSeleccionada" style="font-weight: 400; color: #64748b;">Ninguna seleccionada</span></h2>
+                            <button id="btnAsignarMiembro" class="btn-primario" style="background-color: #2563eb; border-color: #2563eb; padding: 6px 12px; font-size: 13px;" >
+                                <i class="fas fa-user-plus"></i> Asignar Miembro
+                            </button>
+                        </header>
+                        <div class="contenedor-tabla">
+                            <table class="tabla-estilizada">
+                                <thead>
+                                    <tr>
+                                        <th>Nombre</th>
+                                        <th>Apellido</th>
+                                        <th>Teléfono</th>
+                                        <th>Quitar</th>
+                                    </tr>
+                                </thead>
+                                <tbody id="cuerpoTablaIntegrantes">
+                                    <tr>
+                                        <td colspan="4" style="text-align: center; color: #9ca3af; padding: 30px;">
+                                            Selecciona una familia de la izquierda para ver sus integrantes.
+                                        </td>
+                                    </tr>
+                                </tbody>
+                            </table>
+                        </div>
+                    </div>
+                </div>
+
+            </div>
+        </div>
+    </main>
+
+    <div id="modalAsignacionMultiple" class="modal-oculto">
+        <div class="modal-contenido" style="max-width: 700px;">
+            <div class="encabezado-perfil">
+                <h3 style="margin:0; font-size:18px; color: #1e293b;"><i class="fas fa-users-viewfinder"></i> Asignar Integrantes</h3>
+                <button type="button" id="btnCerrarModalAsignacion" style="border:none; background:none; font-size:20px; cursor:pointer; color:#64748b;"><i class="fas fa-times"></i></button>
+            </div>
+            
+            <div style="margin-top: 20px;">
+                <div class="grupo-input">
+                    <div style="position: relative;">
+                        <i class="fas fa-search" style="position: absolute; left: 12px; top: 12px; color: #94a3b8;"></i>
+                        <input type="text" id="inputBuscarMiembroLibre" class="input-estilizado" placeholder="Buscar por nombres o apellidos..." style="padding-left: 35px;">
+                    </div>
+                </div>
+
+                <div style="max-height: 250px; overflow-y: auto; border: 1px solid #e2e8f0; border-radius: 8px; padding: 5px; background: #f8fafc;">
+                    <ul id="listaMiembrosLibres" style="list-style: none; padding: 0; margin: 0;">
+                        </ul>
+                </div>
+            </div>
+
+            <div class="acciones-formulario">
+                <button type="button" id="btnCancelarAsignacion" class="btn-secundario">Cancelar</button>
+                <button type="button" id="btnGuardarAsignacionMultiple" class="btn-primario" style="background-color: #2563eb; border-color: #2563eb;">
+                    <i class="fas fa-link"></i> Vincular Seleccionados
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <!-- NUEVO: MODAL GENERADOR DE REPORTES DE FAMILIAS -->
+    <div id="modalReporteFamilias" class="modal-oculto">
+        <div class="modal-contenido" style="max-width: 600px;">
+            <div class="encabezado-perfil">
+                <h3 style="margin:0; font-size:18px; color: #1e293b;"><i class="fas fa-file-pdf" style="color: #dc2626;"></i> Generar Reporte PDF</h3>
+            </div>
+            
+            <div style="margin-top: 20px;">
+                <!-- Controles de Filtro -->
+                <div class="grid-2-columnas" style="margin-bottom: 15px;">
+                    <div class="grupo-input">
+                        <label>Sector / Asentamiento</label>
+                        <select id="selectFiltroZonaReporte" class="selector-estilizado">
+                            <option value="TODOS">Todos los sectores</option>
+                            <!-- Se llenará dinámicamente con JS -->
+                        </select>
+                    </div>
+                    <div class="grupo-input">
+                        <label>Buscar Familia</label>
+                        <div style="position: relative;">
+                            <i class="fas fa-search" style="position: absolute; left: 12px; top: 12px; color: #94a3b8;"></i>
+                            <input type="text" id="inputBuscarFamiliaReporte" class="input-estilizado" placeholder="Apellidos, calle, etc." style="padding-left: 35px;">
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Barra de selección rápida -->
+                <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 10px; padding: 0 5px;">
+                    <span style="font-size: 13px; color: #64748b; font-weight: 600;" id="contadorFamiliasFiltradas">0 familias encontradas</span>
+                    <label style="font-size: 13px; color: #2563eb; cursor: pointer; font-weight: 600; display: flex; align-items: center; gap: 6px; user-select: none;">
+                        <input type="checkbox" id="checkSeleccionarTodasReporte" style="cursor: pointer; width: 16px; height: 16px;">
+                        Seleccionar todas filtradas
+                    </label>
+                </div>
+
+                <!-- Lista de Familias con Checkboxes -->
+                <div style="max-height: 250px; overflow-y: auto; border: 1px solid #e2e8f0; border-radius: 8px; padding: 5px; background: #f8fafc;">
+                    <ul id="listaFamiliasReporte" style="list-style: none; padding: 0; margin: 0;">
+                        <!-- JS inyectará los <li> aquí -->
+                    </ul>
+                </div>
+            </div>
+
+            <div class="acciones-formulario">
+                <button type="button" id="btnCancelarReporte" class="btn-secundario">Cancelar</button>
+                <button type="button" id="btnExportarPDF" class="btn-primario" style="background-color: #1e293b; border-color: #1e293b;">
+                    <i class="fas fa-download"></i> Exportar PDF
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Librerías para Exportar PDF (Agregadas correctamente antes de tus scripts) -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf-autotable/3.5.31/jspdf.plugin.autotable.min.js"></script>
+
+    <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
+    <script src="../../js/seguridad.js"></script>
+    <script type="module" src="familias.js"></script>
+</body>
+</html>

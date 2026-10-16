@@ -1,0 +1,97 @@
+/* login.css - Soft Brutalism (Sincronizado con estilos globales) */
+body {
+    margin: 0;
+    padding: 0;
+    height: 100vh;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    background-color: var(--nazareno-fondo); 
+}
+
+.tarjeta-modulo {
+    background-color: var(--nazareno-blanco);
+    padding: 40px;
+    border-radius: 12px;
+    border: 2px solid var(--nazareno-borde); 
+    box-shadow: 6px 6px 0px var(--nazareno-borde); 
+    width: 100%;
+    max-width: 400px;
+    text-align: center;
+}
+
+.tarjeta-modulo h2 {
+    margin-top: 0;
+    color: var(--nazareno-texto);
+    font-size: 26px;
+    font-weight: 800;
+    letter-spacing: -0.5px;
+}
+
+form {
+    margin-top: 20px;
+}
+
+label {
+    font-size: 14px;
+    color: var(--nazareno-texto);
+    font-weight: 700;
+    display: block;
+    text-align: left;
+    margin-bottom: 6px;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+}
+
+input[type="text"],
+input[type="password"] {
+    width: 100%;
+    padding: 12px;
+    margin-top: 4px;
+    margin-bottom: 25px;
+    background-color: var(--nazareno-blanco);
+    border: 2px solid var(--nazareno-borde);
+    border-radius: 8px;
+    color: var(--nazareno-texto);
+    font-size: 16px;
+    font-weight: 600;
+    outline: none;
+    transition: all 0.2s ease;
+    box-sizing: border-box; /* Evita que el input se desborde de la tarjeta */
+}
+
+input[type="text"]:focus,
+input[type="password"]:focus {
+    background-color: #fdf8f6; 
+    box-shadow: 4px 4px 0px var(--nazareno-borde); 
+    transform: translate(-2px, -2px); 
+}
+
+/* 
+  Botón primario estilo "Soft Brutalism"
+*/
+.tarjeta-modulo .btn-primario {
+    width: 100%;
+    margin-top: 10px;
+    font-size: 17px;
+    padding: 14px;
+    border-radius: 8px;
+    background-color: var(--nazareno-primario); 
+    color: #ffffff;
+    font-weight: 800;
+    text-transform: uppercase;
+    letter-spacing: 1px;
+    border: 2px solid var(--nazareno-borde);
+    box-shadow: 4px 4px 0px var(--nazareno-borde); 
+    cursor: pointer;
+    transition: all 0.1s ease;
+}
+
+.tarjeta-modulo .btn-primario:hover {
+    background-color: var(--nazareno-primario-hover); 
+}
+
+.tarjeta-modulo .btn-primario:active {
+    transform: translate(4px, 4px); 
+    box-shadow: 0px 0px 0px var(--nazareno-borde);
+}

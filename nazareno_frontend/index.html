@@ -1,0 +1,37 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Login - Gestión Nazareno</title>
+    <link rel="stylesheet" href="css/estilos-globales.css">
+    <link rel="stylesheet" href="css/login.css">
+</head>
+<body>
+    <div class="tarjeta-modulo">
+        <h2>Bienvenido a Gestión Nazareno</h2>
+        <p style="margin-top: 10px; color: #6b7280;">Ingresa tus credenciales para continuar</p>
+        <br>
+
+        <form id="formulario-login">
+            <div style="margin-bottom: 15px; text-align: left;">
+                <label for="nombre_usuario" style="display: block; margin-bottom: 5px;">Usuario:</label>
+                <input type="text" id="nombre_usuario" name="nombre_usuario" required 
+                       style="width: 100%; padding: 8px; box-sizing: border-box;">
+            </div>
+            
+            <div style="margin-bottom: 20px; text-align: left;">
+                <label for="password" style="display: block; margin-bottom: 5px;">Contraseña:</label>
+                <input type="password" id="password" name="password" required 
+                       style="width: 100%; padding: 8px; box-sizing: border-box;">
+            </div>
+
+            <p id="mensaje-error" style="color: #dc2626; display: none; font-size: 14px; margin-bottom: 15px;"></p>
+
+            <button type="submit" class="btn-primario" style="width: 100%; padding: 10px;">Iniciar Sesión</button>
+        </form>
+    </div>
+
+    <script src="js/login.js"></script>
+</body>
+</html>

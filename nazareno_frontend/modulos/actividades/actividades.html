@@ -1,0 +1,220 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Actividades - Gestión Nazareno</title>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <link rel="stylesheet" href="../../css/estilos-globales.css">
+    <link rel="stylesheet" href="actividades.css"> 
+    <style>
+        /* FIX: Ocultar la caja de sugerencias si está vacía para que no se vea una línea gris */
+        .lista-sugerencias:empty { display: none !important; border: none !important; }
+    </style>
+</head>
+<body class="layout-app">
+
+    <div id="menu-lateral-dinamico"></div>
+
+    <main class="contenido-principal">
+        <header class="topbar">
+            <div class="topbar-izq">
+                <button id="btnToggleMenu" class="btn-icono-topbar"><i class="fas fa-bars"></i></button>
+                <h2 style="color: #1e293b; margin-left: 15px;">Calendario de Actividades</h2>
+            </div>
+            <div class="usuario-info">
+                <span id="badge-rol-usuario" class="badge-admin">Cargando...</span>
+                <span id="nombre-usuario-pantalla" style="font-weight: 600; margin-left: 10px; margin-right: 5px;"></span>
+                <i class="fas fa-user-circle fa-2x" style="color: #94a3b8;"></i>
+                <button id="btnCerrarSesion" class="btn-icono-topbar peligro" title="Cerrar Sesión">
+                    <i class="fas fa-sign-out-alt"></i>
+                </button>
+            </div>
+        </header>
+
+        <div class="area-trabajo">
+            <div class="tarjeta-modulo">
+                <header class="encabezado-flex">
+                    <div style="display: flex; align-items: center; gap: 15px;">
+                        <h3 style="margin:0; color: #10b981;"><i class="fas fa-calendar-check"></i> Agenda Eclesiástica</h3>
+                    </div>
+                    
+                    <div style="display: flex; gap: 10px;">
+                        <button id="btnAbrirModalReporteAct" class="btn-secundario">
+                            <i class="fas fa-file-pdf" style="color: #dc2626;"></i> Generar Reporte
+                        </button>
+                        <button id="btnNuevaActividad" class="btn-primario" style="background-color: #10b981; border-color: #10b981;">
+                            <i class="fas fa-plus"></i> Nueva Actividad
+                        </button>
+                    </div>
+                </header>
+                
+                <!-- FILTROS MEJORADOS DE LA VISTA PRINCIPAL -->
+                <div class="controles-filtro">
+                    <div class="grid-2-columnas" style="align-items: center;">
+                        <div class="grupo-input" style="margin-bottom: 0;">
+                            <label><i class="fas fa-search"></i> Búsqueda Rápida:</label>
+                            <input type="text" id="filtroTexto" class="input-estilizado" placeholder="Buscar actividad, ministerio o anfitrión...">
+                        </div>
+                        <div class="grupo-input" style="margin-bottom: 0;">
+                            <label><i class="fas fa-filter"></i> Mostrar periodo:</label>
+                            <select id="filtroRango" class="selector-estilizado">
+                                <option value="todos">Histórico (Todas las actividades)</option>
+                                <option value="mes_actual" selected>Mes Actual</option>
+                                <option value="proximos_7">Próximos 7 días</option>
+                                <option value="manual">Rango de fechas personalizado...</option>
+                            </select>
+                        </div>
+                    </div>
+
+                    <!-- Campos de fecha manual (se muestran solo si elige Rango Personalizado) -->
+                    <div id="contenedorManual" class="grid-2-columnas oculto" style="margin-top: 15px; background: white; padding: 10px; border-radius: 8px; border: 1px solid #e2e8f0;">
+                        <div class="grupo-input" style="margin-bottom: 0;"><label>Desde:</label><input type="date" id="filtroDesde" class="input-estilizado"></div>
+                        <div class="grupo-input" style="margin-bottom: 0;"><label>Hasta:</label><input type="date" id="filtroHasta" class="input-estilizado"></div>
+                    </div>
+                </div>
+            </div>
+
+            <div class="tarjeta-modulo">
+                <div class="contenedor-tabla">
+                    <table class="tabla-estilizada">
+                        <thead>
+                            <tr>
+                                <th>Tipo</th>
+                                <th>Ministerio</th>
+                                <th>Lugar / Anfitrión</th>
+                                <th>Duración</th>
+                                <th>Horario</th>
+                                <th>Acciones</th>
+                            </tr>
+                        </thead>
+                        <tbody id="cuerpoTablaActividades">
+                            <!-- JS inyectará las filas -->
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+    </main>
+
+    <!-- Modal Formulario CRUD -->
+    <div id="modalActividad" class="modal-oculto">
+        <div class="modal-contenido">
+            <div class="encabezado-perfil">
+                <h3 style="margin:0; font-size:18px; color: #1e293b;"><i class="fas fa-calendar-plus" style="color: #10b981;"></i> <span id="tituloModalAct">Programar Actividad</span></h3>
+            </div>
+            
+            <form id="formActividad" style="margin-top: 20px;">
+                <div class="seccion-form">
+                    <div class="grid-2-columnas">
+                        <div class="grupo-input"><label>Fecha:</label><input type="date" id="inputFecha" class="input-estilizado" required></div>
+                        <div class="grupo-input"><label>Tipo:</label><select id="selectTipo" class="selector-estilizado" required></select></div>
+                    </div>
+                    
+                    <div class="grupo-input">
+                        <label>Duración:</label>
+                        <select id="selectDuracion" class="selector-estilizado" required></select>
+                    </div>
+                    
+                    <div id="camposHorario" class="grid-2-columnas oculto">
+                        <div class="grupo-input"><label>Hora Inicio:</label><input type="time" id="inputInicio" class="input-estilizado"></div>
+                        <div class="grupo-input"><label>Hora Fin:</label><input type="time" id="inputFin" class="input-estilizado"></div>
+                    </div>
+
+                    <div class="grupo-input"><label>Ministerio Organizador:</label><select id="selectMinisterio" class="selector-estilizado" required></select></div>
+                    <div class="grupo-input"><label>Lugar / Sede:</label><select id="selectLugar" class="selector-estilizado" required></select></div>
+
+                    <div id="campoAnfitrion" class="grupo-input oculto" style="position: relative;">
+                        <label>Anfitrión (Miembro de la Iglesia):</label>
+                        <input type="text" id="busquedaAnfitrion" class="input-estilizado" placeholder="Escribe el nombre del anfitrión...">
+                        <ul id="resultadosBusqueda" class="lista-sugerencias"></ul>
+                        <input type="hidden" id="idMiembroSeleccionado">
+                    </div>
+                </div> 
+
+                <div class="acciones-formulario">
+                    <button type="button" id="btnCancelarAct" class="btn-secundario">Cancelar</button>
+                    <button type="submit" class="btn-primario" style="background-color: #10b981; border-color: #10b981;">Guardar Actividad</button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <!-- NUEVO: MODAL GENERADOR DE REPORTES DE ACTIVIDADES -->
+    <div id="modalReporteActividades" class="modal-oculto">
+        <div class="modal-contenido" style="max-width: 650px;">
+            <div class="encabezado-perfil">
+                <h3 style="margin:0; font-size:18px; color: #1e293b;"><i class="fas fa-file-pdf" style="color: #dc2626;"></i> Generar Agenda de Actividades</h3>
+            </div>
+            
+            <div style="margin-top: 20px;">
+                
+                <!-- 1. Filtro de Fechas para el PDF -->
+                <div class="grupo-input" style="background: #f8fafc; padding: 15px; border-radius: 8px; border: 1px solid #e2e8f0; margin-bottom: 15px;">
+                    <label style="color: #10b981; font-weight: bold;"><i class="fas fa-calendar-alt"></i> 1. Rango de Fechas a Exportar</label>
+                    <select id="selectFiltroFechaRep" class="selector-estilizado" style="margin-top: 10px;">
+                        <option value="mes_actual">Agenda del Mes Actual</option>
+                        <option value="proximos_30">Próximos 30 días</option>
+                        <option value="historico">Histórico (Todo el año)</option>
+                        <option value="personalizado">Rango Personalizado...</option>
+                    </select>
+
+                    <div id="contenedorFechasRep" class="grid-2-columnas oculto" style="margin-top: 10px;">
+                        <div class="grupo-input" style="margin-bottom:0;"><label>Desde:</label><input type="date" id="inputFechaDesdeRep" class="input-estilizado"></div>
+                        <div class="grupo-input" style="margin-bottom:0;"><label>Hasta:</label><input type="date" id="inputFechaHastaRep" class="input-estilizado"></div>
+                    </div>
+                </div>
+
+                <!-- 2. Filtros Cruzados -->
+                <div style="margin-bottom: 15px;">
+                    <label style="color: #10b981; font-weight: bold; display:block; margin-bottom: 10px;"><i class="fas fa-filter"></i> 2. Filtros Adicionales (Opcional)</label>
+                    <div class="grid-2-columnas">
+                        <div class="grupo-input">
+                            <label>Filtrar por Ministerio</label>
+                            <select id="selectFiltroMinRep" class="selector-estilizado">
+                                <option value="TODOS">-- Todos los Ministerios --</option>
+                            </select>
+                        </div>
+                        <div class="grupo-input">
+                            <label>Filtrar por Tipo</label>
+                            <select id="selectFiltroTipoRep" class="selector-estilizado">
+                                <option value="TODOS">-- Todos los Tipos --</option>
+                            </select>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Previsualización / Selección -->
+                <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 10px; padding: 0 5px;">
+                    <span style="font-size: 13px; color: #64748b; font-weight: 600;" id="contadorActividadesRep">0 actividades encontradas</span>
+                    <label style="font-size: 13px; color: #10b981; cursor: pointer; font-weight: 600; display: flex; align-items: center; gap: 6px; user-select: none;">
+                        <input type="checkbox" id="checkTodasActividadesRep" style="cursor: pointer; width: 16px; height: 16px;">
+                        Seleccionar todas
+                    </label>
+                </div>
+
+                <div style="max-height: 200px; overflow-y: auto; border: 1px solid #e2e8f0; border-radius: 8px; padding: 5px; background: #ffffff;">
+                    <ul id="listaActividadesRep" style="list-style: none; padding: 0; margin: 0;">
+                        <!-- JS inyectará los <li> aquí -->
+                    </ul>
+                </div>
+            </div>
+
+            <div class="acciones-formulario">
+                <button type="button" id="btnCancelarReporteAct" class="btn-secundario">Cancelar</button>
+                <button type="button" id="btnExportarPDFAct" class="btn-primario" style="background-color: #10b981; border-color: #10b981;">
+                    <i class="fas fa-file-export"></i> Descargar Agenda PDF
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Librerías -->
+    <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf-autotable/3.8.2/jspdf.plugin.autotable.min.js"></script>
+    <script src="../../js/seguridad.js"></script>
+    
+    <script type="module" src="actividades.js"></script>
+</body>
+</html>

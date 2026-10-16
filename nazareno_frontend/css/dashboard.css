@@ -1,0 +1,342 @@
+/* dashboard.css - Soft Brutalism */
+
+/* Sobrescribir el padding del body global para que el layout ocupe toda la pantalla */
+.layout-dashboard {
+    padding: 0;
+    display: flex;
+    height: 100vh;
+    overflow: hidden; 
+    background-color: var(--nazareno-fondo); 
+}
+
+/* --- SIDEBAR (Menú Lateral) --- */
+.sidebar {
+    width: 260px;
+    background-color: #ffffff; 
+    color: var(--nazareno-texto);
+    display: flex;
+    flex-direction: column;
+    border-right: 2px solid var(--nazareno-borde); 
+    z-index: 10;
+    transition: width 0.3s ease; 
+    white-space: nowrap;
+}
+
+.sidebar-header {
+    padding: 20px;
+    background-color: #ffffff;
+    text-align: center;
+    border-bottom: 2px solid var(--nazareno-borde);
+}
+
+.sidebar-header h2 {
+    font-weight: 800;
+    letter-spacing: -0.5px;
+}
+
+.sidebar-menu {
+    flex: 1;
+    padding: 20px 15px; 
+    display: flex;
+    flex-direction: column;
+    gap: 8px; 
+}
+
+.menu-item {
+    padding: 12px 15px;
+    color: var(--nazareno-texto);
+    text-decoration: none;
+    font-weight: 700;
+    display: flex;
+    align-items: center;
+    gap: 15px;
+    border: 2px solid transparent; 
+    border-radius: 8px;
+    transition: all 0.1s ease;
+}
+
+/* Estado activo y hover del menú al estilo brutalista */
+.menu-item:hover, .menu-item.activo {
+    background-color: var(--nazareno-fondo);
+    border: 2px solid var(--nazareno-borde);
+    box-shadow: 3px 3px 0px var(--nazareno-borde);
+    transform: translate(-2px, -2px); 
+}
+
+.sidebar-footer {
+    padding: 20px 15px;
+    border-top: 2px solid var(--nazareno-borde);
+    background-color: #ffffff;
+}
+
+.sidebar.colapsado {
+    width: 0;
+    overflow: hidden;
+    border-right: none;
+}
+
+/* =========================================
+   BOTÓN DE SALIR (Peligro)
+   ========================================= */
+.menu-item.text-danger {
+    color: #991b1b !important; /* Texto rojo oscuro */
+    background-color: #fecaca; /* Fondo rojo pastel */
+    border: 2px solid var(--nazareno-borde);
+    box-shadow: 3px 3px 0px var(--nazareno-borde);
+    border-radius: 8px;
+    justify-content: center; /* Centramos el icono y texto de salir */
+}
+
+.menu-item.text-danger:hover {
+    background-color: #f87171; /* Rojo más intenso al pasar el mouse */
+    color: #ffffff !important; /* Letras blancas para contrastar */
+    transform: translate(-2px, -2px);
+    box-shadow: 5px 5px 0px var(--nazareno-borde); /* La sombra crece */
+}
+
+.menu-item.text-danger:active {
+    /* El botón de salir se hunde al hacer clic */
+    transform: translate(3px, 3px);
+    box-shadow: 0px 0px 0px var(--nazareno-borde);
+}
+
+
+/* --- CONTENIDO PRINCIPAL --- */
+.contenido-principal {
+    flex: 1;
+    background-color: var(--nazareno-fondo);
+    display: flex;
+    flex-direction: column;
+    overflow-y: auto; 
+}
+
+.topbar {
+    background-color: #ffffff;
+    padding: 20px 30px;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    border-bottom: 2px solid var(--nazareno-borde);
+}
+
+.topbar-izq { 
+    display: flex; 
+    align-items: center; 
+}
+
+.usuario-info { 
+    display: flex; 
+    align-items: center; 
+    gap: 15px; 
+    font-weight: 700;
+}
+
+/* Badge estilo píldora retro */
+.badge-admin { 
+    background-color: #bfdbfe; 
+    color: var(--nazareno-texto); 
+    padding: 4px 12px; 
+    border-radius: 20px; 
+    font-size: 12px; 
+    font-weight: 800; 
+    border: 2px solid var(--nazareno-borde);
+    box-shadow: 2px 2px 0px var(--nazareno-borde);
+    text-transform: uppercase
+}
+
+/* --- TARJETAS DEL DASHBOARD (Accesos rápidos) --- */
+.grid-tarjetas {
+    padding: 0px 0px 30px 0px;
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+    gap: 25px; 
+}
+
+.tarjeta-acceso {
+    background-color: #ffffff;
+    padding: 30px 20px;
+    border-radius: 12px;
+    text-align: center;
+    text-decoration: none;
+    color: var(--nazareno-texto);
+    border: 2px solid var(--nazareno-borde);
+    box-shadow: 6px 6px 0px var(--nazareno-borde); 
+    transition: all 0.1s ease;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+}
+
+.tarjeta-acceso:hover { 
+    transform: translate(-4px, -4px); 
+    box-shadow: 10px 10px 0px var(--nazareno-borde); 
+}
+
+.tarjeta-acceso:active {
+    transform: translate(4px, 4px);
+    box-shadow: 0px 0px 0px var(--nazareno-borde);
+}
+
+.tarjeta-acceso i { 
+    font-size: 28px;
+    margin-bottom: 15px;
+    padding: 15px;
+    border-radius: 10px;
+    border: 2px solid var(--nazareno-borde);
+    box-shadow: 3px 3px 0px var(--nazareno-borde);
+    background-color: #e5e7eb; 
+}
+
+.tarjeta-acceso h3 { margin-bottom: 10px; font-weight: 800; }
+.tarjeta-acceso p { font-size: 14px; font-weight: 600; color: #57534e; }
+
+/* Colores de acento PASTEL para los iconos de las tarjetas */
+.tarjeta-acceso.azul i { background-color: #93c5fd; color: #1e3a8a; }
+.tarjeta-acceso.verde i { background-color: #86efac; color: #14532d; }
+.tarjeta-acceso.naranja i { background-color: #fdba74; color: #7c2d12; }
+.tarjeta-acceso.gris i { background-color: #cbd5e1; color: #334155; }
+.tarjeta-acceso.morado i { background-color: #d8b4fe; color: #581c87; }
+
+
+/* =========================================
+   NUEVAS MEJORAS: CONTENEDOR CENTRAL Y TITULOS
+   ========================================= */
+.area-trabajo {
+    padding: 30px;
+    max-width: 1300px; /* Evita que las cosas se peguen a los lados en monitores grandes */
+    margin: 0 auto;
+    width: 100%;
+    box-sizing: border-box;
+}
+
+.titulo-seccion {
+    color: var(--nazareno-texto);
+    margin-bottom: 20px;
+    font-weight: 800;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+    border-bottom: 2px solid var(--nazareno-borde);
+    padding-bottom: 10px;
+}
+
+/* =========================================
+   NUEVAS MEJORAS: ESTADÍSTICAS Y KPIs
+   ========================================= */
+.grid-kpis {
+    display: grid;
+    grid-template-columns: repeat(4, 1fr);
+    gap: 20px;
+    margin-bottom: 30px;
+}
+
+.tarjeta-kpi {
+    background-color: #ffffff;
+    padding: 20px;
+    border-radius: 12px;
+    border: 2px solid var(--nazareno-borde);
+    box-shadow: 4px 4px 0px var(--nazareno-borde);
+    text-align: center;
+    transition: transform 0.2s;
+}
+
+.tarjeta-kpi:hover {
+    transform: translate(-2px, -2px);
+    box-shadow: 6px 6px 0px var(--nazareno-borde);
+}
+
+.tarjeta-kpi h4 {
+    color: var(--nazareno-texto);
+    font-size: 14px;
+    text-transform: uppercase;
+    margin-bottom: 10px;
+    font-weight: 700;
+}
+
+.tarjeta-kpi h2 {
+    font-size: 36px;
+    font-weight: 800;
+    color: var(--nazareno-primario);
+    margin: 0;
+}
+
+/* =========================================
+   NUEVAS MEJORAS: GRÁFICOS Y ALERTAS (Soft Brutalism)
+   ========================================= */
+.grid-graficos {
+    display: grid;
+    grid-template-columns: 1fr 1fr 2fr;
+    gap: 25px;
+    margin-bottom: 30px;
+}
+
+.grid-inferior {
+    display: grid;
+    grid-template-columns: 1fr 1fr 1fr;
+    gap: 25px;
+}
+
+.tarjeta-grafico, .tarjeta-alerta {
+    background-color: #ffffff;
+    padding: 20px;
+    border-radius: 12px;
+    border: 2px solid var(--nazareno-borde);
+    box-shadow: 6px 6px 0px var(--nazareno-borde);
+}
+
+.tarjeta-grafico h4, .tarjeta-alerta h4 {
+    color: var(--nazareno-texto);
+    font-size: 15px;
+    font-weight: 800;
+    margin-bottom: 15px;
+    text-transform: uppercase;
+    border-bottom: 2px solid var(--nazareno-borde);
+    padding-bottom: 10px;
+    text-align: center;
+}
+
+.tarjeta-alerta h4.alerta-azul { color: #0369a1; }
+.tarjeta-alerta h4.alerta-morada { color: #7c3aed; }
+
+.tarjeta-alerta ul {
+    list-style: none;
+    padding: 0;
+    margin-top: 10px;
+    font-size: 14px;
+    color: var(--nazareno-texto);
+    font-weight: 600;
+}
+
+.tarjeta-alerta ul li {
+    padding: 10px 0;
+    border-bottom: 2px dashed #cbd5e1;
+}
+
+.tarjeta-alerta ul li:last-child {
+    border-bottom: none;
+}
+
+/* LIMITE PARA LOS GRÁFICOS (Soluciona el tamaño gigante de Chart.js) */
+.contenedor-canvas {
+    position: relative;
+    height: 220px; 
+    width: 100%;
+}
+
+/* =========================================
+   RESPONSIVIDAD (Móviles y Tablets)
+   ========================================= */
+@media (max-width: 1100px) {
+    .grid-graficos { grid-template-columns: 1fr 1fr; }
+    .tarjeta-grafico:nth-child(3) { grid-column: span 2; }
+}
+
+@media (max-width: 900px) {
+    .grid-kpis { grid-template-columns: repeat(2, 1fr); }
+    .grid-graficos { grid-template-columns: 1fr; }
+    .tarjeta-grafico:nth-child(3) { grid-column: span 1; }
+    .grid-inferior { grid-template-columns: 1fr; }
+}
+
+@media (max-width: 600px) {
+    .grid-kpis { grid-template-columns: 1fr; }
+}

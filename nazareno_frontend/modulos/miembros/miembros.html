@@ -1,0 +1,229 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Directorio de Miembros - Gestión Nazareno</title>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <link rel="stylesheet" href="../../css/estilos-globales.css">
+    <link rel="stylesheet" href="miembros.css">
+</head>
+<body class="layout-app">
+
+    <div id="menu-lateral-dinamico"></div>
+
+    <main class="contenido-principal">
+        
+        <header class="topbar">
+            <div class="topbar-izq">
+                <button id="btnToggleMenu" class="btn-icono-topbar"><i class="fas fa-bars"></i></button>
+                <h2 style="color: #1e293b; margin-left: 15px;">Módulo de Membresía</h2>
+            </div>
+            <div class="usuario-info">
+                <span id="badge-rol-usuario" class="badge-admin">Cargando...</span>
+                <span id="nombre-usuario-pantalla" style="font-weight: 600; margin-left: 10px; margin-right: 5px;"></span>
+                <i class="fas fa-user-circle fa-2x" style="color: #94a3b8;"></i>
+
+                <button id="btnCerrarSesion" class="btn-icono-topbar peligro" title="Cerrar Sesión">
+                    <i class="fas fa-sign-out-alt"></i>
+                </button>
+            </div>
+        </header>
+
+        <div class="area-trabajo">
+            <div id="vistaTabla" class="tarjeta-modulo">
+                <header class="encabezado-flex">
+                    <div style="display: flex; align-items: center; gap: 15px;">
+                        <h2 style="color: #2563eb;"><i class="fas fa-users"></i> Directorio General</h2>
+                        <span id="contadorMiembros" class="badge-contador">0 miembros</span>
+                    </div>
+        
+                    <div style="display: flex; gap: 10px;">
+                        <button id="btnAbrirModalReporteMiembros" class="btn-secundario">
+                            <i class="fas fa-file-pdf" style="color: #dc2626;"></i> Generar Reporte
+                        </button>
+                        <button id="btnMostrarFormulario" class="btn-primario">
+                            <i class="fas fa-user-plus"></i> Nuevo Registro
+                        </button>
+                    </div>              
+                </header>
+
+                <div class="controles-filtro">
+                    <div class="grupo-filtro">
+                        <label for="filtroEstado"><i class="fas fa-filter"></i> Filtrar por Estado:</label>
+                        <select id="filtroEstado" class="selector-estilizado">
+                            <option value="todos">-- Todos los Estados --</option>
+                        </select>
+                    </div>
+                </div>
+
+                <div class="contenedor-tabla">
+                    <table class="tabla-estilizada">
+                        <thead>
+                            <tr>
+                                <th>#</th>
+                                <th>Nombres y Apellidos</th>
+                                <th>Teléfono</th>
+                                <th>Estado</th>
+                                <th>Acciones</th>
+                            </tr>
+                        </thead>
+                        <tbody id="cuerpoTablaMiembros"></tbody>
+                    </table>
+                </div>
+            </div>
+
+            <div id="vistaFormulario" class="tarjeta-modulo oculto">
+                <header class="encabezado-flex">
+                    <h2><i class="fas fa-address-card"></i> <span id="tituloFormulario">Registro de Miembro</span></h2>
+                </header>
+
+                <form id="formularioMiembro" class="grid-formulario">
+                    <div class="seccion-form">
+                        <h3 class="subtitulo-seccion">IDENTIDAD PERSONAL</h3>
+                        <div class="grupo-input"><label>Nombres *</label><input type="text" id="inputNombres" class="input-estilizado" required></div>
+                        <div class="grupo-input"><label>Apellidos *</label><input type="text" id="inputApellidos" class="input-estilizado" required></div>
+                        <div class="grupo-input"><label>DPI</label><input type="text" id="inputDpi" class="input-estilizado"></div>
+                        <div class="grupo-input"><label>Género *</label><select id="selectGenero" class="selector-estilizado" required></select></div>
+                        <div class="grid-2-columnas">
+                            <div class="grupo-input"><label>Fecha Nacimiento</label><input type="date" id="inputNacimiento" class="input-estilizado"></div>
+                            <div class="grupo-input"><label>Fecha Bautismo</label><input type="date" id="inputBautismo" class="input-estilizado"></div>
+                        </div>
+                    </div>
+
+                    <div class="seccion-form">
+                        <h3 class="subtitulo-seccion">CONTACTO Y FAMILIA</h3>
+                        <div class="grid-2-columnas">
+                            <div class="grupo-input"><label>Teléfono</label><input type="text" id="inputTelefono" class="input-estilizado"></div>
+                            <div class="grupo-input"><label>Correo Electrónico</label><input type="email" id="inputCorreo" class="input-estilizado"></div>
+                        </div>
+                        <div class="grupo-input"><label>Asignar Familia (Opcional)</label><select id="selectFamilia" class="selector-estilizado"><option value="">-- Sin asignar --</option></select></div>
+                        <div class="grupo-input"><label>Profesión / Oficio</label><select id="selectProfesion" class="selector-estilizado"></select></div>
+                        
+                        <h3 class="subtitulo-seccion">ESTADO ECLESIÁSTICO</h3>
+                        <div class="grid-2-columnas">
+                            <div class="grupo-input"><label>Modo Recepción</label><select id="selectRecepcion" class="selector-estilizado"></select></div>
+                            <div class="grupo-input"><label>Fecha Recepción</label><input type="date" id="inputRecepcion" class="input-estilizado"></div>
+                        </div>
+                        <div class="grupo-input">
+                            <label>Estado del Miembro *</label>
+                            <select id="selectEstado" class="selector-estilizado" required></select>
+                        </div>
+                        
+                        <div id="contenedorRetiro" class="grid-2-columnas oculto" style="background: #fee2e2; padding: 15px; border-radius: 8px; margin-top: 10px;">
+                            <div class="grupo-input"><label style="color:#b91c1c;">Motivo de Retiro</label><select id="selectMotivoRetiro" class="selector-estilizado"></select></div>
+                            <div class="grupo-input"><label style="color:#b91c1c;">Fecha de Retiro</label><input type="date" id="inputFechaRetiro" class="input-estilizado"></div>
+                        </div>
+                    </div>
+
+                    <div class="acciones-formulario" style="grid-column: 1 / -1;">
+                        <button type="button" id="btnCancelarFormulario" class="btn-secundario">Cancelar</button>
+                        <button type="submit" class="btn-primario"><i class="fas fa-save"></i> Guardar Registro</button>
+                    </div>
+                </form>
+            </div>
+
+        </div> <!-- Cierre Area de Trabajo -->
+    </main>
+
+    <!-- Modal Perfil (Ficha) -->
+    <div id="modalPerfil" class="modal-oculto">
+        <div class="modal-contenido modal-ancho">
+            <div class="encabezado-perfil">
+                <div style="display:flex; align-items:center; gap:15px;">
+                    <i class="fas fa-user-circle fa-3x" style="color:#94a3b8;"></i>
+                    <div>
+                        <h3 id="perfilNombre" style="margin:0; font-size:20px;">Nombre</h3>
+                        <span id="perfilDpi" class="badge-contador">DPI: ---</span>
+                    </div>
+                </div>
+                <button id="btnCerrarPerfil" style="border:none; background:none; font-size:20px; cursor:pointer;"><i class="fas fa-times"></i></button>
+            </div>
+            
+            <div class="grid-2-columnas" style="margin-top:20px;">
+                <div class="info-bloque"><p class="label">Estado</p><p id="perfilEstado" class="valor font-bold" style="color:#2563eb;">---</p></div>
+                <div class="info-bloque"><p class="label">Familia y Dirección</p><p id="perfilFamilia" class="valor">---</p></div>
+                
+                <div class="info-bloque"><p class="label">Contacto</p><p id="perfilContacto" class="valor">---</p></div>
+                <div class="info-bloque"><p class="label">Género y Profesión</p><p id="perfilGenProf" class="valor">---</p></div>
+                
+                <div class="info-bloque"><p class="label">Fechas (Nac / Bautismo / Recepción)</p><p id="perfilFechas" class="valor">---</p></div>
+                <div class="info-bloque"><p class="label">Información de Retiro</p><p id="perfilRetiro" class="valor" style="color:#b91c1c;">---</p></div>
+                <!-- NUEVO BLOQUE: MINISTERIOS (Estilo Normalizado) -->
+                <div class="info-bloque" style="grid-column: 1 / -1;">
+                    <p class="label">Ministerios y Cargos</p>
+                    <p id="perfilMinisterios" class="valor">---</p>
+                </div>
+            </div>
+        </div>
+        
+    </div>
+
+    <!-- NUEVO: MODAL GENERADOR DE REPORTES DE MIEMBROS -->
+    <div id="modalReporteMiembros" class="modal-oculto">
+        <div class="modal-contenido" style="max-width: 650px;">
+            <div class="encabezado-perfil">
+                <h3 style="margin:0; font-size:18px; color: #1e293b;"><i class="fas fa-file-pdf" style="color: #dc2626;"></i> Generar Reporte de Miembros</h3>
+            </div>
+            
+            <div style="margin-top: 20px;">
+                <!-- Controles de Filtro (3 Columnas) -->
+                <div style="display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 10px; margin-bottom: 15px;">
+                    <div class="grupo-input">
+                        <label>Estado Eclesiástico</label>
+                        <select id="selectFiltroEstadoRep" class="selector-estilizado">
+                            <option value="TODOS">Todos los estados</option>
+                            <!-- JS inyectará opciones -->
+                        </select>
+                    </div>
+                    <div class="grupo-input">
+                        <label>Género</label>
+                        <select id="selectFiltroGeneroRep" class="selector-estilizado">
+                            <option value="TODOS">Todos los géneros</option>
+                            <!-- JS inyectará opciones -->
+                        </select>
+                    </div>
+                    <div class="grupo-input">
+                        <label>Profesión / Oficio</label>
+                        <select id="selectFiltroProfesionRep" class="selector-estilizado">
+                            <option value="TODOS">Todas las profesiones</option>
+                            <!-- JS inyectará opciones -->
+                        </select>
+                    </div>
+                </div>
+
+                <!-- Barra de selección rápida -->
+                <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 10px; padding: 0 5px;">
+                    <span style="font-size: 13px; color: #64748b; font-weight: 600;" id="contadorMiembrosRep">0 miembros encontrados</span>
+                    <label style="font-size: 13px; color: #2563eb; cursor: pointer; font-weight: 600; display: flex; align-items: center; gap: 6px; user-select: none;">
+                        <input type="checkbox" id="checkTodosMiembrosRep" style="cursor: pointer; width: 16px; height: 16px;">
+                        Seleccionar todos
+                    </label>
+                </div>
+
+                <!-- Lista de Miembros con Checkboxes -->
+                <div style="max-height: 250px; overflow-y: auto; border: 1px solid #e2e8f0; border-radius: 8px; padding: 5px; background: #f8fafc;">
+                    <ul id="listaMiembrosReporte" style="list-style: none; padding: 0; margin: 0;">
+                        <!-- JS inyectará los <li> aquí -->
+                    </ul>
+                </div>
+            </div>
+
+            <div class="acciones-formulario">
+                <button type="button" id="btnCancelarReporteMiembros" class="btn-secundario">Cancelar</button>
+                <button type="button" id="btnExportarPDFMiembros" class="btn-primario" style="background-color: #1e293b; border-color: #1e293b;">
+                    <i class="fas fa-download"></i> Descargar PDF
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Librerías para Exportar PDF -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf-autotable/3.5.31/jspdf.plugin.autotable.min.js"></script>
+
+    <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
+    <script src="../../js/seguridad.js"></script>
+    <script type="module" src="miembros.js"></script>
+</body>
+</html>

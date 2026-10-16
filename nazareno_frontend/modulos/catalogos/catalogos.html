@@ -1,0 +1,103 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Catálogos - Gestión Nazareno</title>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <link rel="stylesheet" href="../../css/estilos-globales.css">
+    <link rel="stylesheet" href="catalogos.css">
+</head>
+<body class="layout-app">
+
+    <div id="menu-lateral-dinamico"></div>
+
+    <main class="contenido-principal">
+        <header class="topbar">
+            <div class="topbar-izq">
+                <button id="btnToggleMenu" class="btn-icono-topbar"><i class="fas fa-bars"></i></button>
+                <h2 style="color: #1e293b; margin-left: 15px;">Configuración de Catálogos</h2>
+            </div>
+            <div class="usuario-info">
+                <span id="badge-rol-usuario" class="badge-admin">Cargando...</span>
+                <span id="nombre-usuario-pantalla" style="font-weight: 600; margin-left: 10px; margin-right: 5px;"></span>
+                <i class="fas fa-user-circle fa-2x" style="color: #94a3b8;"></i>
+                <button id="btnCerrarSesion" class="btn-icono-topbar peligro" title="Cerrar Sesión">
+                    <i class="fas fa-sign-out-alt"></i>
+                </button>
+            </div>
+        </header>
+
+        <div class="area-trabajo">
+            <div class="tarjeta-modulo">
+                
+                <header class="encabezado-flex">
+                    <h2 id="tituloCatalogo" style="color: #64748b;"><i class="fas fa-cogs"></i> Catálogo de Zonas</h2>
+                    <button id="btnNuevoRegistro" class="btn-primario" style="background-color: #64748b; border-color: #64748b;">
+                        <i class="fas fa-plus"></i> Nuevo Registro
+                    </button>
+                </header>
+
+                <div class="controles-filtro" style="background-color: #f8fafc; border-color: #e2e8f0;">
+                    <div class="grupo-filtro">
+                        <label for="selectorCatalogo"><i class="fas fa-list"></i> Seleccionar Catálogo: </label>
+                        <select id="selectorCatalogo" class="selector-estilizado" style="min-width: 250px;">
+                            <option value="zonas">Zonas y Sectores</option>
+                            <option value="profesiones">Profesiones</option>
+                            <option value="motivos-retiro">Motivos de Retiro</option>
+                            <option value="tipos-actividad">Tipos de Actividad</option>
+                            <option value="lugares">Lugares de la Iglesia</option>
+                            <option value="tipos-duracion">Tipos de Duración</option>
+                            <option value="tipos-recepcion">Modo de Recepción</option>
+                        </select>
+                    </div>
+                </div>
+
+                <div class="contenedor-tabla">
+                    <table class="tabla-estilizada">
+                        <thead>
+                            <tr>
+                                <th>No.</th>
+                                <th>Descripción</th>
+                                <th>Acciones</th>
+                            </tr>
+                        </thead>
+                        <tbody id="cuerpoTablaCatalogos">
+                            </tbody>
+                    </table>
+                </div>
+
+            </div>
+        </div>
+    </main>
+
+    <div id="modalRegistro" class="modal-oculto">
+        <div class="modal-contenido">
+            <div class="encabezado-perfil">
+                <h3 id="tituloModal" style="margin:0; font-size:18px; color: #1e293b;">Nuevo Registro</h3>
+            </div>
+            
+            <form id="formularioRegistro" style="margin-top: 20px;">
+                <div class="grupo-input">
+                    <label for="inputTexto" id="labelInputTexto">Descripción:</label>
+                    <input type="text" id="inputTexto" class="input-estilizado" required autocomplete="off">
+                </div>
+                <div id="contenedorBooleano" class="grupo-input oculto">
+                    <label class="checkbox-estilizado" style="display: flex; align-items: center; gap: 10px; cursor: pointer;">
+                        <input type="checkbox" id="inputBooleano" style="width: 18px; height: 18px;">
+                        <span id="textoBooleano">¿Requiere?</span>
+                    </label>
+                </div>
+                <div class="acciones-formulario">
+                    <button type="button" id="btnCancelar" class="btn-secundario">Cancelar</button>
+                    <button type="submit" class="btn-primario" style="background-color: #64748b; border-color: #64748b;"><i class="fas fa-save"></i> Guardar</button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
+    <script src="../../js/seguridad.js"></script>
+    <script type="module" src="catalogos.js"></script>
+</body>
+</html>
