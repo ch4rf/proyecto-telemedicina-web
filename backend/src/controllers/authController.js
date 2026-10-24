@@ -29,4 +29,28 @@ const login = async (req, res) => {
     }
 };
 
-module.exports = { register, login };
+// Controlador para solicitar recuperación de contraseña
+const forgotPassword = async (req, res) => {
+    try {
+        const { correo } = req.body;
+        const result = await authService.solicitarRecuperacion(correo);
+        res.status(200).json(result);
+    } catch (error) {
+        console.error('Error en forgotPassword:', error.message);
+        res.status(400).json({ error: error.message });
+    }
+};
+
+// Controlador para restablecer contraseña con código
+const resetPassword = async (req, res) => {
+    try {
+        const { correo, codigo, nuevoPassword } = req.body;
+        const result = await authService.restablecerPassword(correo, codigo, nuevoPassword);
+        res.status(200).json(result);
+    } catch (error) {
+        console.error('Error en resetPassword:', error.message);
+        res.status(400).json({ error: error.message });
+    }
+};
+
+module.exports = { register, login, forgotPassword, resetPassword };

@@ -21,4 +21,13 @@ const getHistorialCitas = async (req, res) => {
     }
 };
 
-module.exports = { getPerfil, getHistorialCitas };
+const getPacientes = async (req, res) => {
+    try {
+        const pacientes = await pacienteService.listarPacientes();
+        res.json(pacientes);
+    } catch (error) {
+        res.status(500).json({ error: 'Error interno del servidor' });
+    }
+};
+
+module.exports = { getPerfil, getHistorialCitas, getPacientes };

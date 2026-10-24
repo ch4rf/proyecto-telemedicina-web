@@ -45,43 +45,43 @@ Objetivo: Construir la interfaz de usuario interactiva, estética y responsiva (
 Objetivo: Dotar de funcionalidad real y dinámica al 100% de los elementos visuales, botones, formularios e interacciones.
 
 ### Modulo 5.1: Base de Datos y Endpoints de Soporte
-- [ ] 5.1.1 Extension de Esquema BD: Creacion de tabla notificaciones y campos para recuperacion de password y sesiones.
-- [ ] 5.1.2 Endpoints de Notificaciones: Rutas para listar y marcar como leidas las alertas.
-- [ ] 5.1.3 Endpoints de Busqueda y Perfil: Busqueda en tiempo real de medicos/pacientes y consulta/edicion de perfil.
-- [ ] 5.1.4 Endpoints de Consultas y Recetas: Persistencia de diagnostico clinico y emision de medicamentos.
-- [ ] 5.1.5 Endpoints de Estadisticas (KPIs): Calculo dinamico de citas activas, recetas emitidas y videollamadas del dia.
+- [x] 5.1.1 Extension de Esquema BD: Creacion de tabla notificaciones y campos para recuperacion de password y sesiones.
+- [x] 5.1.2 Endpoints de Notificaciones: Rutas para listar y marcar como leidas las alertas.
+- [x] 5.1.3 Endpoints de Busqueda y Perfil: Busqueda en tiempo real de medicos/pacientes y consulta/edicion de perfil.
+- [x] 5.1.4 Endpoints de Consultas y Recetas: Persistencia de diagnostico clinico y emision de medicamentos.
+- [x] 5.1.5 Endpoints de Estadisticas (KPIs): Calculo dinamico de citas activas, recetas emitidas y videollamadas del dia.
 
 ### Modulo 5.2: Capa Base del Cliente Frontend
-- [ ] 5.2.1 Cliente de Comunicacion API: Configuracion de cliente HTTP centralizado con envio automatico de Bearer Token.
-- [ ] 5.2.2 Contexto Global de Autenticacion (AuthContext): Manejo centralizado de usuario activo, rol, persistencia y estado de sesion.
-- [ ] 5.2.3 Enrutamiento Protegido (PrivateRoute): Proteccion estricta de rutas autenticadas y redireccion de usuarios no autorizados.
+- [x] 5.2.1 Cliente de Comunicacion API: Configuracion de cliente HTTP centralizado con envio automatico de Bearer Token.
+- [x] 5.2.2 Contexto Global de Autenticacion (AuthContext): Manejo centralizado de usuario activo, rol, persistencia y estado de sesion.
+- [x] 5.2.3 Enrutamiento Protegido (PrivateRoute): Proteccion estricta de rutas autenticadas y redireccion de usuarios no autorizados.
 
 ### Modulo 5.3: Funcionalidad Total del Modulo de Autenticacion (Login)
-- [ ] 5.3.1 Selector de Rol Dinamico: Alternancia y filtrado de autenticacion segun rol (Paciente / Medico).
-- [ ] 5.3.2 Validacion e Inicio de Sesion Real: Conexion con POST /api/auth/login, gestion de errores y alertas visuales.
-- [ ] 5.3.3 Persistencia de Sesion: Checkbox "Recordar sesion" funcional diferenciando localStorage y sessionStorage.
-- [ ] 5.3.4 Flujo de Recuperacion de Password: Modal y proceso funcional para enlace "Olvido su contrasena?".
-- [ ] 5.3.5 Flujo de Registro de Usuarios: Modal y proceso funcional para enlace "Solicite acceso aqui" (Paciente y Medico).
+- [x] 5.3.1 Selector de Rol Dinamico: Alternancia y filtrado de autenticacion segun rol (Paciente / Medico).
+- [x] 5.3.2 Validacion e Inicio de Sesion Real: Conexion con POST /api/auth/login, gestion de errores y alertas visuales.
+- [x] 5.3.3 Persistencia de Sesion: Checkbox "Recordar sesion" funcional diferenciando localStorage y sessionStorage.
+- [x] 5.3.4 Flujo de Recuperacion de Password: Modal y proceso funcional para enlace "Olvido su contrasena?".
+- [x] 5.3.5 Flujo de Registro de Usuarios: Modal y proceso funcional para enlace "Solicite acceso aqui" (Paciente y Medico).
 
 ### Modulo 5.4: Funcionalidad Total del Panel Principal (Dashboard)
-- [ ] 5.4.1 Control de Cierre de Sesion: Limpieza completa de credenciales y redireccion a Login.
-- [ ] 5.4.2 Header Interactivo - Buscador: Barra de busqueda funcional en tiempo real para medicos y citas.
-- [ ] 5.4.3 Header Interactivo - Notificaciones: Campana con contador reactivo y menu desplegable de avisos con marcado de leidas.
-- [ ] 5.4.4 Header Interactivo - Perfil de Usuario: Avatar interactivo con iniciales reales y modal para ver y actualizar datos personales.
-- [ ] 5.4.5 Navegacion de Sidebar: Vistas activas para "Panel Principal", "Mis Citas", "Directorio Medico" y "Expedientes".
-- [ ] 5.4.6 Tarjetas de Metricas (KPIs): Conteo reactivo conectado a BD con navegacion interactiva al hacer clic.
-- [ ] 5.4.7 Banner de Bienvenida y Proxima Actividad: Carga de nombre del usuario logueado y resumen de la cita mas cercana.
-- [ ] 5.4.8 Modal de Agendamiento de Citas: Boton "Agendar Nueva Cita" con seleccion de medico, fecha, hora y persistencia en BD.
-- [ ] 5.4.9 Modal de Detalles de Cita: Boton "Ver Detalles" con informacion completa y boton condicional de acceso a videollamada.
+- [x] 5.4.1 Control de Cierre de Sesion: Limpieza completa de credenciales y redireccion a Login.
+- [x] 5.4.2 Header Interactivo - Buscador: Barra de busqueda funcional en tiempo real para medicos y citas.
+- [x] 5.4.3 Header Interactivo - Notificaciones: Campana con contador reactivo y menu desplegable de avisos con marcado de leidas.
+- [x] 5.4.4 Header Interactivo - Perfil de Usuario: Avatar interactivo con iniciales reales y modal para ver y actualizar datos personales.
+- [x] 5.4.5 Navegacion de Sidebar: Vistas activas para "Panel Principal", "Mis Citas", "Directorio Medico" y "Expedientes".
+- [x] 5.4.6 Tarjetas de Metricas (KPIs): Conteo reactivo conectado a BD con navegacion interactiva al hacer clic.
+- [x] 5.4.7 Banner de Bienvenida y Proxima Actividad: Carga de nombre del usuario logueado y resumen de la cita mas cercana.
+- [x] 5.4.8 Modal de Agendamiento de Citas: Boton "Agendar Nueva Cita" con seleccion de medico, fecha, hora y persistencia en BD.
+- [x] 5.4.9 Modal de Detalles de Cita: Boton "Ver Detalles" con informacion completa y boton condicional de acceso a videollamada.
 
 ### Modulo 5.5: Funcionalidad Total de la Sala de Videollamada
-- [ ] 5.5.1 Captura Multimedia Real: Integracion de camara y microfono reales del usuario mediante getUserMedia en el PiP.
-- [ ] 5.5.2 Controles de Audio y Video: Botones funcionales para silenciar microfono y apagar camara en tiempo real.
-- [ ] 5.5.3 Compartir Pantalla: Integracion funcional del boton de transmision mediante getDisplayMedia.
-- [ ] 5.5.4 Cronometro en Vivo: Temporizador activo contabilizando la duracion exacta de la sesion.
-- [ ] 5.5.5 Boton Colgar: Liberacion de camara/microfono, actualizacion de estado y retorno seguro al Dashboard.
-- [ ] 5.5.6 Expediente Clinico Dinamico: Carga de datos del paciente y persistencia de notas de diagnostico en BD.
-- [ ] 5.5.7 Emision de Receta Medica: Agregado dinamico de medicamentos, emision formal en BD y actualizacion de cita a COMPLETADA.
+- [x] 5.5.1 Captura Multimedia Real: Integracion de camara y microfono reales del usuario mediante getUserMedia en el PiP.
+- [x] 5.5.2 Controles de Audio y Video: Botones funcionales para silenciar microfono y apagar camara en tiempo real.
+- [x] 5.5.3 Compartir Pantalla: Integracion funcional del boton de transmision mediante getDisplayMedia.
+- [x] 5.5.4 Cronometro en Vivo: Temporizador activo contabilizando la duracion exacta de la sesion.
+- [x] 5.5.5 Boton Colgar: Liberacion de camara/microfono, actualizacion de estado y retorno seguro al Dashboard.
+- [x] 5.5.6 Expediente Clinico Dinamico: Carga de datos del paciente y persistencia de notas de diagnostico en BD.
+- [x] 5.5.7 Emision de Receta Medica: Agregado dinamico de medicamentos, emision formal en BD y actualizacion de cita a COMPLETADA.
 
 ---
 

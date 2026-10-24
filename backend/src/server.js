@@ -11,16 +11,33 @@ app.use(helmet());
 app.use(cors()); 
 app.use(express.json());
 
+// Middleware de trazabilidad de peticiones HTTP
+app.use((req, res, next) => {
+  const auth = req.headers['authorization'] ? 'TOKEN PRESENTE' : 'SIN TOKEN';
+  console.log(`[HTTP ${req.method}] ${req.url} - ${auth}`);
+  next();
+});
+
 // Rutas de la aplicación
 const authRoutes = require('./routes/authRoutes');
 const citaRoutes = require('./routes/citaRoutes');
 const pacienteRoutes = require('./routes/pacienteRoutes');
 const medicoRoutes = require('./routes/medicoRoutes');
+const notificacionRoutes = require('./routes/notificacionRoutes');
+const usuarioRoutes = require('./routes/usuarioRoutes');
+const busquedaRoutes = require('./routes/busquedaRoutes');
+const consultaRoutes = require('./routes/consultaRoutes');
+const statsRoutes = require('./routes/statsRoutes');
 
 app.use('/api/auth', authRoutes);
 app.use('/api/citas', citaRoutes);
 app.use('/api/pacientes', pacienteRoutes);
 app.use('/api/medicos', medicoRoutes);
+app.use('/api/notificaciones', notificacionRoutes);
+app.use('/api/usuarios', usuarioRoutes);
+app.use('/api/buscar', busquedaRoutes);
+app.use('/api/consultas', consultaRoutes);
+app.use('/api/dashboard', statsRoutes);
 
 // Ruta de prueba para verificar conexión
 app.get('/api/health', async (req, res) => {

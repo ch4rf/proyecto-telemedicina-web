@@ -1,0 +1,78 @@
+// ==============================================================================
+// Sistema de Telemedicina - Esquema Relacional de Base de Datos
+// Formato compatible con dbdiagram.io (DBML)
+// ==============================================================================
+
+Table usuarios {
+  id_usuario uuid [pk, default: `uuid_generate_v4()`]
+  correo varchar(255) [unique, not null]
+  password_hash varchar(255) [not null]
+  rol varchar(20) [not null, note: 'PACIENTE | MEDICO | ADMIN']
+  activo boolean [default: true]
+  fecha_registro timestamp [default: `now()`]
+  updated_at timestamp [default: `now()`]
+  token_recuperacion varchar(255)
+  expiracion_token timestamp
+}
+
+Table pacientes {
+  id_paciente uuid [pk, ref: - usuarios.id_usuario]
+  nombres varchar(100) [not null]
+  apellidos varchar(100) [not null]
+  telefono varchar(20)
+  datos_clinicos jsonb [default: '{}', note: 'Alergias, tipo de sangre, antecedentes']
+  created_at timestamp [default: `now()`]
+  updated_at timestamp [default: `now()`]
+}
+
+Table medicos {
+  id_medico uuid [pk, ref: - usuarios.id_usuario]
+  nombres varchar(100) [not null]
+  apellidos varchar(100) [not null]
+  especialidad varchar(100) [not null]
+  disponibilidad jsonb [default: '[]', note: 'Dias y franjas horarias']
+  created_at timestamp [default: `now()`]
+  updated_at timestamp [default: `now()`]
+}
+
+Table citas {
+  id_cita uuid [pk, default: `uuid_generate_v4()`]
+  id_paciente uuid [not null, ref: > pacientes.id_paciente]
+  id_medico uuid [not null, ref: > medicos.id_medico]
+  fecha_hora timestamp [not null]
+  estado varchar(20) [default: 'PROGRAMADA', note: 'PROGRAMADA | COMPLETADA | CANCELADA']
+  url_videollamada varchar(255)
+  enlace_generado_en timestamp
+  created_at timestamp [default: `now()`]
+  updated_at timestamp [default: `now()`]
+}
+
+Table consultas {
+  id_consulta uuid [pk, default: `uuid_generate_v4()`]
+  id_cita uuid [unique, not null, ref: - citas.id_cita]
+  diagnostico text [not null]
+  notas_clinicas text
+  duracion_minutos int
+  fecha_atencion timestamp [default: `now()`]
+  created_at timestamp [default: `now()`]
+  updated_at timestamp [default: `now()`]
+}
+
+Table recetas {
+  id_receta uuid [pk, default: `uuid_generate_v4()`]
+  id_consulta uuid [not null, ref: > consultas.id_consulta]
+  medicamentos jsonb [not null, default: '[]', note: 'Nombre, dosis, frecuencia, duracion']
+  indicaciones_generales text
+  created_at timestamp [default: `now()`]
+  updated_at timestamp [default: `now()`]
+}
+
+Table notificaciones {
+  id_notificacion uuid [pk, default: `uuid_generate_v4()`]
+  id_usuario uuid [not null, ref: > usuarios.id_usuario]
+  titulo varchar(150) [not null]
+  mensaje text [not null]
+  tipo varchar(50) [default: 'INFO', note: 'INFO | RECORDATORIO | RECETA | CITA | ALERTA']
+  leido boolean [default: false]
+  created_at timestamp [default: `now()`]
+}

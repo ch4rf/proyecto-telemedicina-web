@@ -42,7 +42,55 @@ const loginUser = async (correo, password) => {
         { expiresIn: '8h' }
     );
 
-    return { token, rol: user.rol };
+    // 4. Obtener datos del perfil según el rol
+    const perfil = await userRepository.findUserProfileById(user.id_usuario);
+
+    return { token, rol: user.rol, usuario: perfil };
 };
 
-module.exports = { registerUser, loginUser };
+const solicitarRecuperacion = async (correo) => {
+    if (!correo) {
+        throw new Error('El correo electrónico es requerido');
+    }
+
+    const user = await userRepository.findUserByEmail(correo);
+    if (!user) {
+        throw new Error('No existe una cuenta activa asociada a este correo electrónico');
+    }
+
+    // Generar código de verificación de 6 dígitos con vigencia de 15 minutos en PostgreSQL
+    const codigo = Math.floor(100000 + Math.random() * 900000).toString();
+
+    await userRepository.guardarTokenRecuperacion(correo, codigo);
+
+    return {
+        ok: true,
+        mensaje: 'Código de verificación generado y enviado.',
+        codigo_simulado: codigo // Permite validación directa en entorno de pruebas
+    };
+};
+
+const restablecerPassword = async (correo, codigo, nuevoPassword) => {
+    if (!correo || !codigo || !nuevoPassword) {
+        throw new Error('Todos los campos son requeridos para restablecer la contraseña');
+    }
+
+    if (nuevoPassword.length < 3) {
+        throw new Error('La contraseña debe contener al menos 3 caracteres');
+    }
+
+    const salt = await bcrypt.genSalt(10);
+    const passwordHash = await bcrypt.hash(nuevoPassword, salt);
+
+    const actualizado = await userRepository.actualizarPasswordPorToken(correo, codigo, passwordHash);
+    if (!actualizado) {
+        throw new Error('El código de verificación es inválido o ha expirado');
+    }
+
+    return {
+        ok: true,
+        mensaje: 'Su contraseña ha sido actualizada exitosamente. Ya puede iniciar sesión.'
+    };
+};
+
+module.exports = { registerUser, loginUser, solicitarRecuperacion, restablecerPassword };

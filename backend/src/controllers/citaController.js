@@ -2,6 +2,10 @@ const citaService = require('../services/citaService');
 
 const crearCita = async (req, res) => {
     try {
+        const { idPaciente, idMedico, fechaHora } = req.body;
+        if (!idPaciente || !idMedico || !fechaHora) {
+            return res.status(400).json({ error: 'Faltan campos obligatorios: paciente, médico o fecha y hora' });
+        }
         const nuevaCita = await citaService.agendarCita(req.body);
         res.status(201).json({ mensaje: 'Cita agendada con éxito', cita: nuevaCita });
     } catch (error) {
@@ -32,4 +36,37 @@ const accederVideollamada = async (req, res) => {
     }
 };
 
-module.exports = { crearCita, accederVideollamada };
+const getMisCitas = async (req, res) => {
+    try {
+        const id_usuario = req.usuario.id;
+        const rol = req.usuario.rol;
+        console.log(`[citaController.getMisCitas] User: ${id_usuario}, Rol: ${rol}`);
+        const citas = await citaService.obtenerMisCitas(id_usuario, rol);
+        console.log(`[citaController.getMisCitas] Retornando ${citas.length} citas`);
+        res.status(200).json({ ok: true, total: citas.length, data: citas });
+    } catch (error) {
+        console.error('Error al obtener citas:', error.message);
+        res.status(500).json({ ok: false, error: 'Error interno del servidor' });
+    }
+};
+
+const getDetalleCita = async (req, res) => {
+    try {
+        const { id } = req.params;
+        const id_usuario = req.usuario.id;
+        const rol = req.usuario.rol;
+        const detalle = await citaService.obtenerDetalleCita(id, id_usuario, rol);
+        res.status(200).json({ ok: true, data: detalle });
+    } catch (error) {
+        if (error.message.includes('no encontrada')) {
+            return res.status(404).json({ ok: false, error: error.message });
+        }
+        if (error.message.includes('autorización')) {
+            return res.status(403).json({ ok: false, error: error.message });
+        }
+        console.error('Error al obtener detalle de cita:', error.message);
+        res.status(500).json({ ok: false, error: 'Error interno del servidor' });
+    }
+};
+
+module.exports = { crearCita, accederVideollamada, getMisCitas, getDetalleCita };

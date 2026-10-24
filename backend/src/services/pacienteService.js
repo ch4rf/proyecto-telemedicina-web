@@ -12,4 +12,8 @@ const obtenerHistorialCitas = async (idPaciente) => {
     return citas;
 };
 
-module.exports = { obtenerPerfil, obtenerHistorialCitas };
+const listarPacientes = async () => {
+    return await pacienteRepository.getAllPacientes();
+};
+
+module.exports = { obtenerPerfil, obtenerHistorialCitas, listarPacientes };

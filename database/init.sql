@@ -14,7 +14,9 @@ CREATE TABLE usuarios (
     rol VARCHAR(20) NOT NULL CHECK (rol IN ('PACIENTE', 'MEDICO', 'ADMIN')),
     activo BOOLEAN DEFAULT TRUE,
     fecha_registro TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-    updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+    updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    token_recuperacion VARCHAR(255),
+    expiracion_token TIMESTAMP
 );
 
 -- 2. Tabla: Pacientes
@@ -75,4 +77,15 @@ CREATE TABLE recetas (
     indicaciones_generales TEXT,
     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
     updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+);
+
+-- 7. Tabla: Notificaciones
+CREATE TABLE notificaciones (
+    id_notificacion UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
+    id_usuario UUID NOT NULL REFERENCES usuarios(id_usuario) ON DELETE CASCADE,
+    titulo VARCHAR(150) NOT NULL,
+    mensaje TEXT NOT NULL,
+    tipo VARCHAR(50) DEFAULT 'INFO' CHECK (tipo IN ('INFO', 'RECORDATORIO', 'RECETA', 'CITA', 'ALERTA')),
+    leido BOOLEAN DEFAULT FALSE,
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
 );

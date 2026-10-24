@@ -18,10 +18,20 @@ const getCitasByPaciente = async (idPaciente) => {
          FROM citas c
          JOIN medicos m ON c.id_medico = m.id_medico
          WHERE c.id_paciente = $1
-         ORDER BY c.fecha_hora DESC`,
+         ORDER BY c.fecha_hora ASC`,
         [idPaciente]
     );
     return result.rows;
 };
 
-module.exports = { getPacienteById, getCitasByPaciente };
+const getAllPacientes = async () => {
+    const result = await pool.query(
+        `SELECT p.id_paciente, p.nombres, p.apellidos, p.telefono, u.correo
+         FROM pacientes p
+         JOIN usuarios u ON p.id_paciente = u.id_usuario
+         ORDER BY p.nombres ASC`
+    );
+    return result.rows;
+};
+
+module.exports = { getPacienteById, getCitasByPaciente, getAllPacientes };

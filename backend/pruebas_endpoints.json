@@ -1,0 +1,164 @@
+{
+  "info": {
+    "name": "Sistema de Telemedicina - Endpoints Módulo 5.1",
+    "description": "Colección de endpoints para pruebas de integración Front-Back (Postman / Insomnia)",
+    "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
+  },
+  "item": [
+    {
+      "name": "1. Notificaciones - Listar Alertas",
+      "request": {
+        "method": "GET",
+        "header": [
+          { "key": "Authorization", "value": "Bearer {{TOKEN_JWT}}" }
+        ],
+        "url": {
+          "raw": "http://localhost:4000/api/notificaciones",
+          "protocol": "http",
+          "host": ["localhost"],
+          "port": "4000",
+          "path": ["api", "notificaciones"]
+        }
+      }
+    },
+    {
+      "name": "2. Notificaciones - Marcar como Leída",
+      "request": {
+        "method": "PATCH",
+        "header": [
+          { "key": "Authorization", "value": "Bearer {{TOKEN_JWT}}" }
+        ],
+        "url": {
+          "raw": "http://localhost:4000/api/notificaciones/ID_NOTIFICACION_AQUI/leida",
+          "protocol": "http",
+          "host": ["localhost"],
+          "port": "4000",
+          "path": ["api", "notificaciones", "ID_NOTIFICACION_AQUI", "leida"]
+        }
+      }
+    },
+    {
+      "name": "3. Usuarios - Obtener Perfil Autenticado",
+      "request": {
+        "method": "GET",
+        "header": [
+          { "key": "Authorization", "value": "Bearer {{TOKEN_JWT}}" }
+        ],
+        "url": {
+          "raw": "http://localhost:4000/api/usuarios/perfil",
+          "protocol": "http",
+          "host": ["localhost"],
+          "port": "4000",
+          "path": ["api", "usuarios", "perfil"]
+        }
+      }
+    },
+    {
+      "name": "4. Usuarios - Actualizar Perfil",
+      "request": {
+        "method": "PUT",
+        "header": [
+          { "key": "Authorization", "value": "Bearer {{TOKEN_JWT}}" },
+          { "key": "Content-Type", "value": "application/json" }
+        ],
+        "body": {
+          "mode": "raw",
+          "raw": "{\n  \"nombres\": \"Juan Carlos\",\n  \"apellidos\": \"Pérez Gómez\",\n  \"telefono\": \"555-123-4567\",\n  \"datos_clinicos\": {\n    \"tipo_sangre\": \"O+\",\n    \"alergias\": [\"Penicilina\"],\n    \"antecedentes\": \"Hipertensión leve\"\n  }\n}"
+        },
+        "url": {
+          "raw": "http://localhost:4000/api/usuarios/perfil",
+          "protocol": "http",
+          "host": ["localhost"],
+          "port": "4000",
+          "path": ["api", "usuarios", "perfil"]
+        }
+      }
+    },
+    {
+      "name": "5. Búsqueda en Vivo - Médicos y Citas",
+      "request": {
+        "method": "GET",
+        "header": [
+          { "key": "Authorization", "value": "Bearer {{TOKEN_JWT}}" }
+        ],
+        "url": {
+          "raw": "http://localhost:4000/api/buscar?q=cardio",
+          "protocol": "http",
+          "host": ["localhost"],
+          "port": "4000",
+          "path": ["api", "buscar"],
+          "query": [{ "key": "q", "value": "cardio" }]
+        }
+      }
+    },
+    {
+      "name": "6. Consultas - Finalizar Consulta y Emitir Receta",
+      "request": {
+        "method": "POST",
+        "header": [
+          { "key": "Authorization", "value": "Bearer {{TOKEN_JWT_MEDICO}}" },
+          { "key": "Content-Type", "value": "application/json" }
+        ],
+        "body": {
+          "mode": "raw",
+          "raw": "{\n  \"id_cita\": \"ID_CITA_AQUI\",\n  \"diagnostico\": \"Faringoamigdalitis aguda con hipertrofia leve\",\n  \"notas_clinicas\": \"Paciente refiere 3 días de odinofagia y febrícula.\",\n  \"duracion_minutos\": 20,\n  \"medicamentos\": [\n    {\n      \"nombre\": \"Amoxicilina 500mg\",\n      \"dosis\": \"1 cápsula\",\n      \"frecuencia\": \"Cada 8 horas\",\n      \"duracion\": \"7 días\"\n    },\n    {\n      \"nombre\": \"Ibuprofeno 400mg\",\n      \"dosis\": \"1 tableta\",\n      \"frecuencia\": \"Cada 8 horas con alimentos\",\n      \"duracion\": \"3 días\"\n    }\n  ],\n  \"indicaciones_generales\": \"Reposo relativo e hidratación abundante.\"\n}"
+        },
+        "url": {
+          "raw": "http://localhost:4000/api/consultas",
+          "protocol": "http",
+          "host": ["localhost"],
+          "port": "4000",
+          "path": ["api", "consultas"]
+        }
+      }
+    },
+    {
+      "name": "7. Consultas - Detalle de Expediente por Cita",
+      "request": {
+        "method": "GET",
+        "header": [
+          { "key": "Authorization", "value": "Bearer {{TOKEN_JWT}}" }
+        ],
+        "url": {
+          "raw": "http://localhost:4000/api/consultas/cita/ID_CITA_AQUI",
+          "protocol": "http",
+          "host": ["localhost"],
+          "port": "4000",
+          "path": ["api", "consultas", "cita", "ID_CITA_AQUI"]
+        }
+      }
+    },
+    {
+      "name": "8. Consultas - Historial de Recetas del Usuario",
+      "request": {
+        "method": "GET",
+        "header": [
+          { "key": "Authorization", "value": "Bearer {{TOKEN_JWT}}" }
+        ],
+        "url": {
+          "raw": "http://localhost:4000/api/consultas/recetas",
+          "protocol": "http",
+          "host": ["localhost"],
+          "port": "4000",
+          "path": ["api", "consultas", "recetas"]
+        }
+      }
+    },
+    {
+      "name": "9. Dashboard - Métricas de Tarjetas (KPIs)",
+      "request": {
+        "method": "GET",
+        "header": [
+          { "key": "Authorization", "value": "Bearer {{TOKEN_JWT}}" }
+        ],
+        "url": {
+          "raw": "http://localhost:4000/api/dashboard/stats",
+          "protocol": "http",
+          "host": ["localhost"],
+          "port": "4000",
+          "path": ["api", "dashboard", "stats"]
+        }
+      }
+    }
+  ]
+}
