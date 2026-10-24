@@ -2,11 +2,11 @@ const { Pool } = require('pg');
 require('dotenv').config();
 
 const pool = new Pool({
-  user: process.env.DB_USER,
-  host: process.env.DB_HOST,
-  password: process.env.DB_PASSWORD,
-  database: process.env.DB_NAME,
-  port: process.env.DB_PORT,
+  user: process.env.DB_USER || 'admin_telemedicina',
+  host: process.env.DB_HOST || 'localhost',
+  password: process.env.DB_PASSWORD || 'password_seguro_123',
+  database: process.env.DB_NAME || 'telemedicina_db',
+  port: Number(process.env.DB_PORT) || 5433,
 });
 
 pool.on('connect', () => {

@@ -38,7 +38,7 @@ const loginUser = async (correo, password) => {
     // 3. Regla: Generar el JWT
     const token = jwt.sign(
         { id: user.id_usuario, rol: user.rol },
-        process.env.JWT_SECRET,
+        process.env.JWT_SECRET || 'super_secreto_para_jwt_123!',
         { expiresIn: '8h' }
     );
 
