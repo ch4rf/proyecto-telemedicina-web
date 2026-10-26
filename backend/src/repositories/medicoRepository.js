@@ -13,7 +13,7 @@ const getAllMedicos = async (especialidad = null) => {
 
 const getCitasByMedico = async (idMedico) => {
     const result = await pool.query(
-        `SELECT c.id_cita, c.fecha_hora, c.estado, c.url_videollamada, 
+        `SELECT c.id_cita, c.fecha_hora, c.estado, c.cancelado_por, c.url_videollamada, 
                 p.id_paciente, p.nombres AS paciente_nombres, p.apellidos AS paciente_apellidos
          FROM citas c
          JOIN pacientes p ON c.id_paciente = p.id_paciente

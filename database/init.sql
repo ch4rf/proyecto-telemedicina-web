@@ -50,6 +50,7 @@ CREATE TABLE citas (
     id_medico UUID NOT NULL REFERENCES medicos(id_medico) ON DELETE CASCADE,
     fecha_hora TIMESTAMP NOT NULL,
     estado VARCHAR(20) NOT NULL DEFAULT 'PROGRAMADA' CHECK (estado IN ('PROGRAMADA', 'COMPLETADA', 'CANCELADA')),
+    cancelado_por VARCHAR(20),
     url_videollamada VARCHAR(255),
     enlace_generado_en TIMESTAMP,
     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,

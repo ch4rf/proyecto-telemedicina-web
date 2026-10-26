@@ -101,4 +101,51 @@ const obtenerDetalleCita = async (idCita, idUsuario, rol) => {
     };
 };
 
-module.exports = { agendarCita, obtenerAccesoVideollamada, obtenerMisCitas, obtenerDetalleCita };
+const cancelarCita = async (idCita, idUsuario, rol) => {
+    const cita = await citaRepository.getCitaById(idCita);
+    if (!cita) {
+        throw new Error('Cita no encontrada');
+    }
+
+    // Regla de Autorización: Solo el paciente o el médico asignado pueden cancelar la cita
+    if (cita.id_paciente !== idUsuario && cita.id_medico !== idUsuario && rol !== 'ADMIN') {
+        throw new Error('No tienes autorización para cancelar esta cita');
+    }
+
+    if (cita.estado !== 'PROGRAMADA') {
+        throw new Error(`No se puede cancelar una cita que ya se encuentra en estado ${cita.estado}`);
+    }
+
+    const fechaCita = new Date(cita.fecha_hora);
+    const ahora = new Date();
+    const diferenciaHoras = (fechaCita - ahora) / (1000 * 60 * 60);
+
+    // Regla de Negocio RN-03: Un paciente solo puede cancelar si faltan más de 2 horas para la cita
+    if (rol === 'PACIENTE' && diferenciaHoras < 2) {
+        throw new Error('Política RN-03: Solo puedes cancelar una cita con al menos 2 horas de anticipación. Por favor contacta a tu médico.');
+    }
+
+    const citaCancelada = await citaRepository.cancelarCitaPorId(cita.id_cita, rol);
+
+    // Notificación automática para informar a la contraparte
+    try {
+        const fechaTexto = fechaCita.toLocaleDateString('es-ES', {
+            weekday: 'long', day: 'numeric', month: 'long', hour: '2-digit', minute: '2-digit'
+        });
+        const idDestinatario = idUsuario === cita.id_paciente ? cita.id_medico : cita.id_paciente;
+        const quienCancelo = rol === 'MEDICO' ? 'El médico especialista' : 'El paciente';
+
+        await notificacionRepository.crear(
+            idDestinatario,
+            'Cita Médica Cancelada',
+            `${quienCancelo} ha cancelado la teleconsulta programada para el ${fechaTexto}.`,
+            'ALERTA'
+        );
+    } catch (notifErr) {
+        console.warn('Advertencia al registrar notificación de cancelación:', notifErr.message);
+    }
+
+    return citaCancelada;
+};
+
+module.exports = { agendarCita, obtenerAccesoVideollamada, obtenerMisCitas, obtenerDetalleCita, cancelarCita };
