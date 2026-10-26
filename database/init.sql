@@ -90,3 +90,16 @@ CREATE TABLE notificaciones (
     leido BOOLEAN DEFAULT FALSE,
     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
 );
+
+-- 8. Tabla: Catalogo de Medicamentos (Fuente Externa / OpenFDA)
+CREATE TABLE IF NOT EXISTS catalogo_medicamentos (
+    id_medicamento UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
+    nombre_comercial VARCHAR(200) UNIQUE NOT NULL,
+    principio_activo VARCHAR(200) NOT NULL,
+    presentacion VARCHAR(150),
+    dosis_recomendada VARCHAR(150),
+    frecuencia_recomendada VARCHAR(150),
+    duracion_recomendada VARCHAR(100),
+    fuente VARCHAR(50) DEFAULT 'OpenFDA',
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+);

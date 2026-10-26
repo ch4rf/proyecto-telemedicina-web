@@ -89,6 +89,23 @@ class ConsultaController {
             });
         }
     }
+
+    async getCatalogoMedicamentos(req, res) {
+        try {
+            const q = req.query.q || '';
+            const catalogo = await consultaService.buscarCatalogoMedicamentos(q);
+            return res.status(200).json({
+                ok: true,
+                total: catalogo.length,
+                data: catalogo
+            });
+        } catch (error) {
+            return res.status(400).json({
+                ok: false,
+                error: error.message
+            });
+        }
+    }
 }
 
 module.exports = new ConsultaController();
