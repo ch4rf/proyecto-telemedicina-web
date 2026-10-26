@@ -128,9 +128,9 @@ Objetivo: Permitir la impresión/descarga de recetas médicas en formato clínic
 ### Módulo 7.1: Descarga e Impresión de Recetas Médicas en PDF (RF-16)
 *Rama de Git asignada:* `feature/recetas-pdf`
 
-- [ ] **7.1.1 Componente de Vista Imprimible de Receta Médica:** Crear un generador de documento clínico limpio en `frontend/src/utils/generarRecetaPDF.js` que estructure una receta médica profesional (Membrete de NovaSalud, datos del médico y especialidad, datos del paciente, fecha, diagnóstico, tabla de medicamentos con dosis/frecuencia/duración, indicaciones generales y firma digital) y dispare el motor de impresión/guardado en PDF del navegador.
+- [x] **7.1.1 Componente de Vista Imprimible de Receta Médica:** Crear un generador de documento clínico limpio en `frontend/src/utils/generarRecetaPDF.js` que estructure una receta médica profesional (Membrete de NovaSalud, datos del médico y especialidad, datos del paciente, fecha, diagnóstico, tabla de medicamentos con dosis/frecuencia/duración, indicaciones generales y firma digital) y dispare el motor de impresión/guardado en PDF del navegador.
   - *Prueba de verificación:* Importar la función e invocarla con datos de prueba para verificar que se abre la vista previa de PDF con diseño limpio en una hoja tamaño carta.
-- [ ] **7.1.2 Botón "Descargar / Imprimir PDF" en Mis Recetas y Detalle de Cita:** Conectar `generarRecetaPDF` en un botón `"Descargar Receta PDF"` dentro de cada tarjeta de receta en la vista `"Mis Recetas / Expedientes"` de `frontend/src/pages/Dashboard.jsx` y dentro de `frontend/src/components/ModalDetalleCita.jsx` (cuando la cita está `COMPLETADA`).
+- [x] **7.1.2 Botón "Descargar / Imprimir PDF" en Mis Recetas y Detalle de Cita:** Conectar `generarRecetaPDF` en un botón `"Descargar Receta PDF"` dentro de cada tarjeta de receta en la vista `"Mis Recetas / Expedientes"` de `frontend/src/pages/Dashboard.jsx` y dentro de `frontend/src/components/ModalDetalleCita.jsx` (cuando la cita está `COMPLETADA`).
   - *Prueba de verificación:* Entrar como paciente o médico a la pestaña "Mis Recetas", hacer clic en "Descargar Receta PDF" y comprobar que se genera el documento listo para guardar como PDF.
 
 ### Módulo 7.2: Historial Clínico Completo por Paciente para el Médico (RF-13 y RN-05)

@@ -11,6 +11,7 @@ import ModalPerfil from '../components/ModalPerfil';
 import ModalAgendarCita from '../components/ModalAgendarCita';
 import ModalDetalleCita from '../components/ModalDetalleCita';
 import ErrorBoundary from '../components/ErrorBoundary';
+import { generarRecetaPDF } from '../utils/generarRecetaPDF';
 
 export default function Dashboard() {
   const navigate = useNavigate();
@@ -1343,6 +1344,16 @@ export default function Dashboard() {
                             })}
                           </span>
                           <span className="text-[10px] text-slate-400 font-mono">ID: {receta.id_receta.substring(0, 8)}</span>
+                          <div className="mt-2">
+                            <button
+                              type="button"
+                              onClick={() => generarRecetaPDF(receta, usuario)}
+                              className="inline-flex items-center gap-1.5 px-3 py-1.5 bg-teal-600 hover:bg-teal-700 text-white text-xs font-semibold rounded-xl shadow-xs transition-all cursor-pointer"
+                            >
+                              <FileText className="w-3.5 h-3.5" />
+                              <span>Descargar Receta PDF</span>
+                            </button>
+                          </div>
                         </div>
                       </div>
 
