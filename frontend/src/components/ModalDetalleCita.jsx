@@ -6,6 +6,7 @@ import {
 } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 import { api } from '../services/api';
+import { generarRecetaPDF } from '../utils/generarRecetaPDF';
 
 export default function ModalDetalleCita({
   isOpen,
@@ -467,6 +468,14 @@ export default function ModalDetalleCita({
                       <div className="flex items-center gap-2 font-bold text-xs text-teal-800">
                         <Pill className="w-4 h-4 text-teal-600" />
                         <span>Prescripción Médica Emitida</span>
+                        <button
+                          type="button"
+                          onClick={() => generarRecetaPDF(cita, usuario)}
+                          className="ml-auto inline-flex items-center gap-1.5 px-3 py-1 bg-teal-600 hover:bg-teal-700 text-white text-[11px] font-semibold rounded-lg shadow-xs transition-all cursor-pointer"
+                        >
+                          <FileText className="w-3 h-3" />
+                          <span>Descargar PDF</span>
+                        </button>
                       </div>
                       {cita.medicamentos && (
                         <div className="text-xs">
