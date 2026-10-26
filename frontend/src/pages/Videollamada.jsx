@@ -2,7 +2,7 @@ import React, { useState, useEffect, useRef } from 'react';
 import { 
   Mic, MicOff, Video, VideoOff, PhoneOff, MonitorUp, MonitorOff, FileText, 
   Pill, Save, Loader2, AlertCircle, Camera, CheckCircle2, User, Mail, Phone,
-  Stethoscope, Activity, Plus, Trash2
+  Stethoscope, Activity, Plus, Trash2, Clock, ChevronDown, ChevronUp
 } from 'lucide-react';
 import { useNavigate, useParams } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
@@ -57,6 +57,11 @@ export default function Videollamada() {
 
   // Estados de Colgar Llamada (Tarea 5.5.5)
   const [mostrarConfirmacionColgar, setMostrarConfirmacionColgar] = useState(false);
+
+  // Estados de Historial Clínico Previo del Paciente (Tarea 7.2.2)
+  const [historialPrevio, setHistorialPrevio] = useState([]);
+  const [cargandoHistorial, setCargandoHistorial] = useState(false);
+  const [mostrarHistorialPrevio, setMostrarHistorialPrevio] = useState(false);
 
   // Detención segura de un stream específico y remoción del registro
   const detenerStreamTotal = (stream) => {
@@ -258,6 +263,30 @@ export default function Videollamada() {
       cancelado = true;
     };
   }, [roomId]);
+
+  // Tarea 7.2.2: Cargar historial clínico de consultas previas del paciente (RF-13 y RN-05)
+  useEffect(() => {
+    let cancelado = false;
+    const cargarHistorialPaciente = async () => {
+      if (!cita?.id_paciente) return;
+      try {
+        setCargandoHistorial(true);
+        const res = await api.get(`/consultas/paciente/${cita.id_paciente}/historial`);
+        const lista = Array.isArray(res) ? res : (res?.data || []);
+        if (!cancelado) {
+          setHistorialPrevio(lista);
+        }
+      } catch (err) {
+        console.warn('[Videollamada] No se pudo cargar el historial clínico previo:', err.message);
+      } finally {
+        if (!cancelado) setCargandoHistorial(false);
+      }
+    };
+    cargarHistorialPaciente();
+    return () => {
+      cancelado = true;
+    };
+  }, [cita?.id_paciente]);
 
   // Tarea 5.5.6: Persistencia de notas clínicas y diagnóstico en BD
   const handleGuardarNotas = async () => {
@@ -766,6 +795,84 @@ export default function Videollamada() {
               <div className="pt-2 border-t border-slate-200/60">
                 <span className="text-[11px] font-semibold text-slate-600 block mb-0.5">Antecedentes Clínicos:</span>
                 {renderDatosClinicos(cita.paciente_datos_clinicos)}
+              </div>
+            )}
+          </div>
+
+          {/* Historial de Consultas Previas del Paciente (Tarea 7.2.2 - RF-13 / RN-05) */}
+          <div className="bg-slate-50 border border-slate-200/80 rounded-2xl overflow-hidden">
+            <button
+              type="button"
+              onClick={() => setMostrarHistorialPrevio(prev => !prev)}
+              className="w-full px-4 py-3 flex items-center justify-between text-left hover:bg-slate-100/80 transition-colors cursor-pointer"
+            >
+              <span className="text-xs font-bold text-slate-700 flex items-center gap-2">
+                <Clock className="w-4 h-4 text-teal-600" />
+                Ver Historial de Consultas Previas ({historialPrevio.length})
+              </span>
+              {mostrarHistorialPrevio ? (
+                <ChevronUp className="w-4 h-4 text-slate-500" />
+              ) : (
+                <ChevronDown className="w-4 h-4 text-slate-500" />
+              )}
+            </button>
+
+            {mostrarHistorialPrevio && (
+              <div className="px-4 pb-4 pt-1 border-t border-slate-200/60 space-y-2.5 max-h-60 overflow-y-auto">
+                {cargandoHistorial ? (
+                  <div className="py-3 flex items-center justify-center gap-2 text-xs text-slate-500">
+                    <Loader2 className="w-4 h-4 animate-spin text-teal-600" />
+                    <span>Cargando consultas previas...</span>
+                  </div>
+                ) : historialPrevio.length === 0 ? (
+                  <p className="text-xs text-slate-500 italic py-2">
+                    Este paciente no registra consultas clínicas previas.
+                  </p>
+                ) : (
+                  historialPrevio.map((item, idx) => {
+                    let meds = item.medicamentos || [];
+                    if (typeof meds === 'string') {
+                      try { meds = JSON.parse(meds); } catch { meds = []; }
+                    }
+                    const fechaStr = item.fecha_atencion || item.fecha_hora
+                      ? new Date(item.fecha_atencion || item.fecha_hora).toLocaleDateString('es-GT', {
+                          day: '2-digit', month: 'short', year: 'numeric'
+                        })
+                      : 'Sin fecha';
+
+                    return (
+                      <div key={item.id_consulta || idx} className="p-3 bg-white rounded-xl border border-slate-200/90 space-y-1.5 shadow-2xs">
+                        <div className="flex items-center justify-between text-[11px]">
+                          <span className="font-bold text-teal-700">{fechaStr}</span>
+                          <span className="text-slate-500 font-medium">
+                            Dr(a). {item.medico_nombres} {item.medico_apellidos}
+                          </span>
+                        </div>
+                        <p className="text-xs text-slate-800">
+                          <span className="font-semibold text-slate-700">Diagnóstico:</span> {item.diagnostico || 'Sin diagnóstico'}
+                        </p>
+                        {item.notas_clinicas && (
+                          <p className="text-[11px] text-slate-600 line-clamp-2">
+                            <span className="font-semibold text-slate-700">Notas:</span> {item.notas_clinicas}
+                          </p>
+                        )}
+                        {Array.isArray(meds) && meds.length > 0 && (
+                          <div className="pt-1 flex flex-wrap gap-1">
+                            {meds.map((m, mIdx) => (
+                              <span
+                                key={mIdx}
+                                className="inline-flex items-center gap-1 px-2 py-0.5 bg-teal-50 text-teal-700 border border-teal-100 rounded-md text-[10px] font-medium"
+                              >
+                                <Pill className="w-2.5 h-2.5" />
+                                {m.nombre}{m.dosis ? ` (${m.dosis})` : ''}
+                              </span>
+                            ))}
+                          </div>
+                        )}
+                      </div>
+                    );
+                  })
+                )}
               </div>
             )}
           </div>

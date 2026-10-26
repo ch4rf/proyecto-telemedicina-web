@@ -15,4 +15,7 @@ router.put('/notas', verificarToken, (req, res) => consultaController.guardarNot
 // Obtener todas las recetas asociadas al usuario autenticado (paciente o médico)
 router.get('/recetas', verificarToken, (req, res) => consultaController.getMisRecetas(req, res));
 
+// Obtener historial clínico previo de un paciente (médico asignado según RN-05 o propio paciente)
+router.get('/paciente/:idPaciente/historial', verificarToken, (req, res) => consultaController.getHistorialPaciente(req, res));
+
 module.exports = router;

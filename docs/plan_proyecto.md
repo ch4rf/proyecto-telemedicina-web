@@ -136,9 +136,9 @@ Objetivo: Permitir la impresión/descarga de recetas médicas en formato clínic
 ### Módulo 7.2: Historial Clínico Completo por Paciente para el Médico (RF-13 y RN-05)
 *Rama de Git asignada:* `feature/historial-clinico`
 
-- [ ] **7.2.1 Endpoint de Historial Clínico del Paciente (Backend):** Agregar en `backend/src/repositories/consultaRepository.js`, `consultaService.js`, `consultaController.js` y `consultaRoutes.js` la ruta protegida `GET /api/consultas/paciente/:idPaciente/historial`, verificando la regla RN-05 (que el médico tenga al menos una cita vinculada con ese paciente) y devolviendo todas sus consultas y recetas previas ordenadas por fecha.
+- [x] **7.2.1 Endpoint de Historial Clínico del Paciente (Backend):** Agregar en `backend/src/repositories/consultaRepository.js`, `consultaService.js`, `consultaController.js` y `consultaRoutes.js` la ruta protegida `GET /api/consultas/paciente/:idPaciente/historial`, verificando la regla RN-05 (que el médico tenga al menos una cita vinculada con ese paciente) y devolviendo todas sus consultas y recetas previas ordenadas por fecha.
   - *Prueba de verificación:* Consultar el endpoint con el token del médico para el paciente de prueba y verificar que retorna el arreglo JSON de consultas anteriores; probar con un usuario no autorizado y verificar que bloquea el acceso.
-- [ ] **7.2.2 Pestaña de "Historial previo del Paciente" en Sala de Videollamada:** Agregar en el panel derecho de `frontend/src/pages/Videollamada.jsx` una sección desplegable `"Ver Historial de Consultas Previas"` para que el médico, mientras atiende al paciente, pueda consultar qué diagnósticos y medicamentos se le recetaron en citas pasadas.
+- [x] **7.2.2 Pestaña de "Historial previo del Paciente" en Sala de Videollamada:** Agregar en el panel derecho de `frontend/src/pages/Videollamada.jsx` una sección desplegable `"Ver Historial de Consultas Previas"` para que el médico, mientras atiende al paciente, pueda consultar qué diagnósticos y medicamentos se le recetaron en citas pasadas.
   - *Prueba de verificación:* Entrar como médico a una sala de consulta, abrir "Historial de Consultas Previas" y verificar que se listan los diagnósticos y recetas anteriores de ese paciente.
 
 ### Módulo 7.3: Consumo de Fuente Externa / Catálogo de Medicamentos en BD (Punto 4 de la Guía)

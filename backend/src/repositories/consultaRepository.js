@@ -154,6 +154,33 @@ class ConsultaRepository {
         const { rows } = await pool.query(query, [id_cita, diagnostico, notas_clinicas, duracion_minutos]);
         return rows[0];
     }
+
+    async verificarRelacionMedicoPaciente(id_medico, id_paciente) {
+        const query = `
+            SELECT 1 FROM citas
+            WHERE id_medico = $1 AND id_paciente = $2
+            LIMIT 1;
+        `;
+        const { rows } = await pool.query(query, [id_medico, id_paciente]);
+        return rows.length > 0;
+    }
+
+    async obtenerHistorialPorPaciente(id_paciente) {
+        const query = `
+            SELECT c.id_consulta, c.id_cita, c.diagnostico, c.notas_clinicas, c.duracion_minutos, c.fecha_atencion,
+                   ci.fecha_hora, ci.estado,
+                   m.nombres AS medico_nombres, m.apellidos AS medico_apellidos, m.especialidad,
+                   r.id_receta, r.medicamentos, r.indicaciones_generales
+            FROM consultas c
+            JOIN citas ci ON c.id_cita = ci.id_cita
+            JOIN medicos m ON ci.id_medico = m.id_medico
+            LEFT JOIN recetas r ON c.id_consulta = r.id_consulta
+            WHERE ci.id_paciente = $1
+            ORDER BY c.fecha_atencion DESC;
+        `;
+        const { rows } = await pool.query(query, [id_paciente]);
+        return rows;
+    }
 }
 
 module.exports = new ConsultaRepository();

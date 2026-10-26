@@ -69,6 +69,26 @@ class ConsultaController {
             });
         }
     }
+
+    async getHistorialPaciente(req, res) {
+        try {
+            const { idPaciente } = req.params;
+            const id_usuario = req.usuario.id;
+            const rol = req.usuario.rol;
+            const historial = await consultaService.obtenerHistorialPaciente(idPaciente, id_usuario, rol);
+            return res.status(200).json({
+                ok: true,
+                total: historial.length,
+                data: historial
+            });
+        } catch (error) {
+            const status = error.message.includes('Acceso restringido') || error.message.includes('No tiene autorización') ? 403 : 400;
+            return res.status(status).json({
+                ok: false,
+                error: error.message
+            });
+        }
+    }
 }
 
 module.exports = new ConsultaController();
