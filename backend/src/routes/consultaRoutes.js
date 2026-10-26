@@ -6,6 +6,9 @@ const { verificarToken } = require('../middlewares/authMiddleware');
 // Finalizar videollamada y emitir receta (médico)
 router.post('/', verificarToken, (req, res) => consultaController.finalizarConsulta(req, res));
 
+// Obtener catálogo de medicamentos desde PostgreSQL / OpenFDA (Punto 4 de la Guía)
+router.get('/medicamentos/catalogo', verificarToken, (req, res) => consultaController.getCatalogoMedicamentos(req, res));
+
 // Obtener detalles de consulta y receta de una cita en particular
 router.get('/cita/:id_cita', verificarToken, (req, res) => consultaController.getConsultaPorCita(req, res));
 

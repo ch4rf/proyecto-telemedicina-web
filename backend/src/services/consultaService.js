@@ -1,5 +1,6 @@
 const consultaRepository = require('../repositories/consultaRepository');
 const citaRepository = require('../repositories/citaRepository');
+const medicamentoRepository = require('../repositories/medicamentoRepository');
 
 class ConsultaService {
     async registrarAtencion(id_medico, datos) {
@@ -85,6 +86,51 @@ class ConsultaService {
         }
 
         return await consultaRepository.obtenerHistorialPorPaciente(idPacienteLimpio);
+    }
+
+    async buscarCatalogoMedicamentos(termino = '') {
+        const q = String(termino || '').trim();
+        let resultadosLocales = await medicamentoRepository.buscarPorTermino(q);
+
+        // Si el término tiene 3+ caracteres y hay pocos resultados locales, consultar API externa OpenFDA,
+        // procesar los datos, almacenarlos en PostgreSQL y devolverlos al usuario (Punto 4 de la Guía)
+        if (q.length >= 3 && resultadosLocales.length < 3 && typeof fetch === 'function') {
+            try {
+                const controller = new AbortController();
+                const timeout = setTimeout(() => controller.abort(), 3500);
+                const url = `https://api.fda.gov/drug/label.json?search=openfda.brand_name:"${encodeURIComponent(q)}"+openfda.generic_name:"${encodeURIComponent(q)}"&limit=3`;
+                const response = await fetch(url, { signal: controller.signal });
+                clearTimeout(timeout);
+
+                if (response.ok) {
+                    const json = await response.json();
+                    const items = Array.isArray(json.results) ? json.results : [];
+                    for (const item of items) {
+                        const brand = item.openfda?.brand_name?.[0];
+                        const generic = item.openfda?.generic_name?.[0];
+                        const route = item.openfda?.route?.[0] || 'Oral';
+                        if (brand || generic) {
+                            const nombreComercial = String(brand || generic).slice(0, 180);
+                            const principioActivo = String(generic || brand).slice(0, 180);
+                            await medicamentoRepository.guardarMedicamentoExterno({
+                                nombre_comercial: nombreComercial,
+                                principio_activo: principioActivo,
+                                presentacion: `Vía ${route}`,
+                                dosis_recomendada: '1 unidad (según indicación)',
+                                frecuencia_recomendada: 'Cada 8 a 12 horas',
+                                duracion_recomendada: '5 días',
+                                fuente: 'OpenFDA API'
+                            });
+                        }
+                    }
+                    resultadosLocales = await medicamentoRepository.buscarPorTermino(q);
+                }
+            } catch (err) {
+                console.warn('[ConsultaService] Fallback a catálogo local PostgreSQL (OpenFDA no disponible o sin coincidencias):', err.message);
+            }
+        }
+
+        return resultadosLocales;
     }
 }
 

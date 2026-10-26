@@ -63,6 +63,10 @@ export default function Videollamada() {
   const [cargandoHistorial, setCargandoHistorial] = useState(false);
   const [mostrarHistorialPrevio, setMostrarHistorialPrevio] = useState(false);
 
+  // Estados de Autocompletado del Catálogo de Medicamentos (Tarea 7.3.3)
+  const [catalogoMedicamentos, setCatalogoMedicamentos] = useState([]);
+  const [indiceAutocompleteActivo, setIndiceAutocompleteActivo] = useState(null);
+
   // Detención segura de un stream específico y remoción del registro
   const detenerStreamTotal = (stream) => {
     if (!stream) return;
@@ -138,6 +142,49 @@ export default function Videollamada() {
       return;
     }
     setMedicamentos(prev => prev.filter((_, i) => i !== index));
+  };
+
+  // Tarea 7.3.3: Búsqueda y autocompletado con el catálogo de medicamentos en PostgreSQL / OpenFDA
+  useEffect(() => {
+    if (!isMedico) return;
+    let cancelado = false;
+    api.get('/consultas/medicamentos/catalogo?q=')
+      .then(res => {
+        const lista = Array.isArray(res) ? res : (res?.data || []);
+        if (!cancelado) setCatalogoMedicamentos(lista);
+      })
+      .catch(err => console.warn('[Videollamada] Aviso al cargar catálogo de medicamentos:', err.message));
+    return () => { cancelado = true; };
+  }, [isMedico]);
+
+  const handleCambioNombreMedicamento = async (index, valor) => {
+    actualizarMedicamento(index, 'nombre', valor);
+    setIndiceAutocompleteActivo(index);
+    if (valor && valor.trim().length >= 2) {
+      try {
+        const res = await api.get(`/consultas/medicamentos/catalogo?q=${encodeURIComponent(valor.trim())}`);
+        const lista = Array.isArray(res) ? res : (res?.data || []);
+        if (lista.length > 0) {
+          setCatalogoMedicamentos(lista);
+        }
+      } catch (err) {
+        console.warn('[Videollamada] Error buscando en catálogo:', err.message);
+      }
+    }
+  };
+
+  const seleccionarMedicamentoCatalogo = (index, item) => {
+    setMedicamentos(prev => {
+      const copia = [...prev];
+      copia[index] = {
+        nombre: item.nombre_comercial || '',
+        dosis: item.dosis_recomendada || copia[index].dosis || '',
+        frecuencia: item.frecuencia_recomendada || copia[index].frecuencia || '',
+        duracion: item.duracion_recomendada || copia[index].duracion || ''
+      };
+      return copia;
+    });
+    setIndiceAutocompleteActivo(null);
   };
 
   const actualizarMedicamento = (index, campo, valor) => {
@@ -969,10 +1016,48 @@ export default function Videollamada() {
                     <input 
                       type="text" 
                       value={med.nombre}
-                      onChange={(e) => actualizarMedicamento(idx, 'nombre', e.target.value)}
+                      onFocus={() => setIndiceAutocompleteActivo(idx)}
+                      onBlur={() => setTimeout(() => setIndiceAutocompleteActivo(prev => prev === idx ? null : prev), 180)}
+                      onChange={(e) => handleCambioNombreMedicamento(idx, e.target.value)}
                       placeholder="Nombre del fármaco (Ej. Paracetamol 500mg)" 
                       className="w-full p-2.5 bg-white border border-slate-200 rounded-xl text-xs focus:ring-2 focus:ring-teal-500/20 focus:border-teal-500 outline-none shadow-xs text-slate-800"
                     />
+                    {indiceAutocompleteActivo === idx && (() => {
+                      const filtro = (med.nombre || '').trim().toLowerCase();
+                      const sugerencias = catalogoMedicamentos.filter(item =>
+                        !filtro ||
+                        item.nombre_comercial?.toLowerCase().includes(filtro) ||
+                        item.principio_activo?.toLowerCase().includes(filtro)
+                      ).slice(0, 6);
+
+                      if (sugerencias.length === 0) return null;
+
+                      return (
+                        <div className="bg-white border border-slate-200 rounded-xl shadow-lg max-h-44 overflow-y-auto divide-y divide-slate-100">
+                          {sugerencias.map((item, sIdx) => (
+                            <button
+                              key={item.id_medicamento || sIdx}
+                              type="button"
+                              onMouseDown={(e) => {
+                                e.preventDefault();
+                                seleccionarMedicamentoCatalogo(idx, item);
+                              }}
+                              className="w-full px-3 py-2 text-left hover:bg-teal-50/70 transition-colors cursor-pointer flex items-center justify-between gap-2"
+                            >
+                              <div>
+                                <p className="text-xs font-bold text-slate-800">{item.nombre_comercial}</p>
+                                <p className="text-[10px] text-slate-500">
+                                  {item.principio_activo} • {item.dosis_recomendada} ({item.frecuencia_recomendada})
+                                </p>
+                              </div>
+                              <span className="text-[9px] font-semibold px-1.5 py-0.5 bg-teal-50 text-teal-700 border border-teal-100 rounded">
+                                Autocompletar
+                              </span>
+                            </button>
+                          ))}
+                        </div>
+                      );
+                    })()}
                     <div className="grid grid-cols-3 gap-2">
                       <input 
                         type="text" 

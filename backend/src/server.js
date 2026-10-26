@@ -28,6 +28,7 @@ const usuarioRoutes = require('./routes/usuarioRoutes');
 const busquedaRoutes = require('./routes/busquedaRoutes');
 const consultaRoutes = require('./routes/consultaRoutes');
 const statsRoutes = require('./routes/statsRoutes');
+require('./repositories/medicamentoRepository');
 
 app.use('/api/auth', authRoutes);
 app.use('/api/citas', citaRoutes);
