@@ -589,7 +589,13 @@ export default function Dashboard() {
                               </p>
                             </div>
                             <span className="text-[10px] bg-slate-100 text-slate-700 px-2 py-0.5 rounded-full font-semibold">
-                              {cita.estado}
+                              {cita.estado === 'CANCELADA'
+                              ? cita.cancelado_por === 'MEDICO'
+                                ? 'CANCELADO POR MÉDICO'
+                                : cita.cancelado_por === 'PACIENTE'
+                                ? 'CANCELADO POR PACIENTE'
+                                : 'CANCELADA'
+                              : cita.estado}
                             </span>
                           </div>
                         ))}
@@ -1021,7 +1027,13 @@ export default function Dashboard() {
                               ? 'bg-emerald-50 text-emerald-700 border border-emerald-200' 
                               : 'bg-rose-50 text-rose-700 border border-rose-200'
                           }`}>
-                            {cita.estado}
+                            {cita.estado === 'CANCELADA'
+                              ? cita.cancelado_por === 'MEDICO'
+                                ? 'CANCELADO POR MÉDICO'
+                                : cita.cancelado_por === 'PACIENTE'
+                                ? 'CANCELADO POR PACIENTE'
+                                : 'CANCELADA'
+                              : cita.estado}
                           </span>
 
                           <button
@@ -1150,7 +1162,13 @@ export default function Dashboard() {
                               ? 'bg-emerald-50 text-emerald-700 border border-emerald-200' 
                               : 'bg-rose-50 text-rose-700 border border-rose-200'
                           }`}>
-                            {cita.estado}
+                            {cita.estado === 'CANCELADA'
+                              ? cita.cancelado_por === 'MEDICO'
+                                ? 'CANCELADO POR MÉDICO'
+                                : cita.cancelado_por === 'PACIENTE'
+                                ? 'CANCELADO POR PACIENTE'
+                                : 'CANCELADA'
+                              : cita.estado}
                           </span>
 
                           <button
@@ -1395,6 +1413,7 @@ export default function Dashboard() {
             setCitaSeleccionadaId(null);
           }}
           idCita={citaSeleccionadaId}
+          onCitaActualizada={handleCitaAgendada}
           usuario={usuario}
         />
       </ErrorBoundary>

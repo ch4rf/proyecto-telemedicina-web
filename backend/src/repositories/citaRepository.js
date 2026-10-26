@@ -1,5 +1,8 @@
 const pool = require('../config/db');
 
+// Asegurar que la columna cancelado_por exista en bases de datos ya creadas
+pool.query(`ALTER TABLE citas ADD COLUMN IF NOT EXISTS cancelado_por VARCHAR(20);`).catch(() => {});
+
 const checkOverlappingCita = async (idMedico, fechaHora) => {
     const result = await pool.query(
         `SELECT id_cita FROM citas 
@@ -37,6 +40,7 @@ const getCitaDetalleById = async (idCita) => {
             c.id_medico,
             c.fecha_hora,
             c.estado,
+            c.cancelado_por,
             c.url_videollamada,
             c.enlace_generado_en,
             c.created_at,
@@ -72,4 +76,16 @@ const getCitaDetalleById = async (idCita) => {
     return result.rows[0] || null;
 };
 
-module.exports = { checkOverlappingCita, createCita, getCitaById, getCitaDetalleById };
+const cancelarCitaPorId = async (idCita, canceladoPor = null) => {
+    await pool.query(`ALTER TABLE citas ADD COLUMN IF NOT EXISTS cancelado_por VARCHAR(20);`);
+    const result = await pool.query(
+        `UPDATE citas 
+         SET estado = 'CANCELADA', cancelado_por = $2, updated_at = CURRENT_TIMESTAMP 
+         WHERE id_cita = $1 
+         RETURNING *`,
+        [idCita, canceladoPor]
+    );
+    return result.rows[0] || null;
+};
+
+module.exports = { checkOverlappingCita, createCita, getCitaById, getCitaDetalleById, cancelarCitaPorId };

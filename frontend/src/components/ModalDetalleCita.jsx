@@ -11,13 +11,17 @@ export default function ModalDetalleCita({
   isOpen,
   onClose,
   idCita,
-  usuario
+  usuario,
+  onCitaActualizada
 }) {
   const navigate = useNavigate();
   const [cita, setCita] = useState(null);
   const [cargando, setCargando] = useState(false);
   const [error, setError] = useState('');
   const [copiado, setCopiado] = useState(false);
+  const [confirmarCancelacion, setConfirmarCancelacion] = useState(false);
+  const [cancelando, setCancelando] = useState(false);
+  const [errorCancelacion, setErrorCancelacion] = useState('');
 
   // Carga del detalle al abrir el modal o cambiar idCita
   useEffect(() => {
@@ -25,6 +29,9 @@ export default function ModalDetalleCita({
       setCita(null);
       setError('');
       setCargando(false);
+      setConfirmarCancelacion(false);
+      setCancelando(false);
+      setErrorCancelacion('');
       return;
     }
 
@@ -32,6 +39,8 @@ export default function ModalDetalleCita({
       try {
         setCargando(true);
         setError('');
+        setConfirmarCancelacion(false);
+        setErrorCancelacion('');
         const res = await api.get(`/citas/${idCita}`);
         const data = res?.data || res;
         setCita(data);
@@ -64,6 +73,25 @@ export default function ModalDetalleCita({
     if (!cita?.url_videollamada) return;
     onClose();
     navigate(`/sala/${cita.url_videollamada}`);
+  };
+
+  // Manejador para cancelar la cita (Tarea 6.1.4 - Regla RN-03)
+  const handleCancelarCita = async () => {
+    if (!cita?.id_cita) return;
+    try {
+      setCancelando(true);
+      setErrorCancelacion('');
+      await api.patch(`/citas/${cita.id_cita}/cancelar`);
+      setCita(prev => prev ? { ...prev, estado: 'CANCELADA', cancelado_por: usuario?.rol, sala_habilitada: false } : prev);
+      setConfirmarCancelacion(false);
+      if (onCitaActualizada) {
+        onCitaActualizada();
+      }
+    } catch (err) {
+      setErrorCancelacion(err.message || 'No fue posible cancelar la cita.');
+    } finally {
+      setCancelando(false);
+    }
   };
 
   // Formateadores de fecha
@@ -212,7 +240,13 @@ export default function ModalDetalleCita({
                   ? 'bg-emerald-50 text-emerald-700 border border-emerald-200' 
                   : 'bg-rose-50 text-rose-700 border border-rose-200'
               }`}>
-                {cita.estado}
+                {cita.estado === 'CANCELADA'
+                  ? cita.cancelado_por === 'MEDICO'
+                    ? 'CANCELADO POR MÉDICO'
+                    : cita.cancelado_por === 'PACIENTE'
+                    ? 'CANCELADO POR PACIENTE'
+                    : 'CANCELADA'
+                  : cita.estado}
               </span>
             )}
             <button
@@ -451,12 +485,55 @@ export default function ModalDetalleCita({
                 </div>
               )}
 
+              {/* Aviso o error de cancelación (Tarea 6.1.4) */}
+              {errorCancelacion && (
+                <div className="bg-rose-50 border border-rose-200 rounded-2xl p-4 flex items-start gap-3 text-rose-700">
+                  <AlertCircle className="w-5 h-5 flex-shrink-0 mt-0.5" />
+                  <p className="text-xs font-medium">{errorCancelacion}</p>
+                </div>
+              )}
+
+              {/* Confirmación de cancelación (Tarea 6.1.4) */}
+              {cita.estado === 'PROGRAMADA' && confirmarCancelacion && (
+                <div className="bg-rose-50/80 border border-rose-200 rounded-2xl p-4 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3">
+                  <div className="text-xs text-rose-800">
+                    <p className="font-bold">¿Estás seguro de que deseas cancelar esta cita?</p>
+                    <p className="text-rose-600 mt-0.5">Esta acción notificará automáticamente a la otra parte y liberará el horario.</p>
+                  </div>
+                  <div className="flex items-center gap-2 w-full sm:w-auto justify-end">
+                    <button
+                      type="button"
+                      disabled={cancelando}
+                      onClick={() => { setConfirmarCancelacion(false); setErrorCancelacion(''); }}
+                      className="px-3 py-1.5 bg-white border border-slate-200 text-slate-600 hover:bg-slate-50 font-semibold text-xs rounded-xl transition-colors cursor-pointer"
+                    >
+                      No, conservar
+                    </button>
+                    <button
+                      type="button"
+                      disabled={cancelando}
+                      onClick={handleCancelarCita}
+                      className="px-3.5 py-1.5 bg-rose-600 hover:bg-rose-700 text-white font-semibold text-xs rounded-xl shadow-xs transition-all flex items-center gap-1.5 cursor-pointer disabled:opacity-50"
+                    >
+                      {cancelando && <Loader2 className="w-3.5 h-3.5 animate-spin" />}
+                      <span>Sí, cancelar cita</span>
+                    </button>
+                  </div>
+                </div>
+              )}
+
               {/* Tarjeta 5: Si la cita fue CANCELADA */}
               {cita.estado === 'CANCELADA' && (
                 <div className="bg-rose-50 border border-rose-200 rounded-2xl p-4 flex items-center gap-3 text-rose-700">
                   <AlertCircle className="w-5 h-5 flex-shrink-0" />
                   <p className="text-xs">
-                    Esta cita médica fue cancelada. Si necesitas atención, te sugerimos agendar una nueva teleconsulta en el horario disponible de tu especialista.
+                    {cita.cancelado_por === 'MEDICO' ? (
+                      <><strong>Cancelado por el médico:</strong> Esta cita médica fue cancelada por el especialista. Si necesitas atención, te sugerimos agendar una nueva teleconsulta en otro horario disponible.</>
+                    ) : cita.cancelado_por === 'PACIENTE' ? (
+                      <><strong>Cancelado por el paciente:</strong> Esta cita médica fue cancelada por solicitud del paciente.</>
+                    ) : (
+                      'Esta cita médica fue cancelada. Si necesitas atención, te sugerimos agendar una nueva teleconsulta en el horario disponible de tu especialista.'
+                    )}
                   </p>
                 </div>
               )}
@@ -474,6 +551,15 @@ export default function ModalDetalleCita({
           </div>
 
           <div className="flex items-center gap-3">
+            {cita && cita.estado === 'PROGRAMADA' && !confirmarCancelacion && (
+              <button
+                type="button"
+                onClick={() => { setConfirmarCancelacion(true); setErrorCancelacion(''); }}
+                className="px-4 py-2 border border-rose-200 text-rose-600 hover:bg-rose-50 font-semibold text-xs rounded-xl transition-colors cursor-pointer"
+              >
+                Cancelar Cita
+              </button>
+            )}
             <button
               type="button"
               onClick={onClose}

@@ -69,4 +69,30 @@ const getDetalleCita = async (req, res) => {
     }
 };
 
-module.exports = { crearCita, accederVideollamada, getMisCitas, getDetalleCita };
+const cancelarCita = async (req, res) => {
+    try {
+        const { id } = req.params;
+        const id_usuario = req.usuario.id;
+        const rol = req.usuario.rol;
+        const citaCancelada = await citaService.cancelarCita(id, id_usuario, rol);
+        res.status(200).json({
+            ok: true,
+            mensaje: 'Cita cancelada correctamente',
+            data: citaCancelada
+        });
+    } catch (error) {
+        if (error.message.includes('no encontrada')) {
+            return res.status(404).json({ ok: false, error: error.message });
+        }
+        if (error.message.includes('autorización')) {
+            return res.status(403).json({ ok: false, error: error.message });
+        }
+        if (error.message.includes('RN-03') || error.message.includes('estado')) {
+            return res.status(400).json({ ok: false, error: error.message });
+        }
+        console.error('Error al cancelar cita:', error.message);
+        res.status(500).json({ ok: false, error: 'Error interno del servidor' });
+    }
+};
+
+module.exports = { crearCita, accederVideollamada, getMisCitas, getDetalleCita, cancelarCita };
