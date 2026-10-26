@@ -2,11 +2,12 @@ const citaService = require('../services/citaService');
 
 const crearCita = async (req, res) => {
     try {
-        const { idPaciente, idMedico, fechaHora } = req.body;
+        const idPaciente = req.usuario?.rol === 'PACIENTE' ? req.usuario.id : req.body.idPaciente;
+        const { idMedico, fechaHora } = req.body;
         if (!idPaciente || !idMedico || !fechaHora) {
             return res.status(400).json({ error: 'Faltan campos obligatorios: paciente, médico o fecha y hora' });
         }
-        const nuevaCita = await citaService.agendarCita(req.body);
+        const nuevaCita = await citaService.agendarCita({ ...req.body, idPaciente });
         res.status(201).json({ mensaje: 'Cita agendada con éxito', cita: nuevaCita });
     } catch (error) {
         console.error('Error al agendar cita:', error.message);

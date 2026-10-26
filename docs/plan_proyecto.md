@@ -113,11 +113,11 @@ Objetivo: Implementar cancelación de citas con reglas de negocio (RN-03), confi
 ### Módulo 6.3: Blindaje de Seguridad OWASP Top 10
 *Rama de Git asignada:* `feature/seguridad-owasp`
 
-- [ ] **6.3.1 Protección de Rutas de Citas (Broken Access Control - A01):** Agregar el middleware `verificarToken` a las rutas `POST /api/citas/agendar` y `GET /api/citas/:id/videollamada` en `backend/src/routes/citaRoutes.js`, asegurando que el `idPaciente` se valide contra el token o cuerpo autenticado.
+- [x] **6.3.1 Protección de Rutas de Citas (Broken Access Control - A01):** Agregar el middleware `verificarToken` a las rutas `POST /api/citas/agendar` y `GET /api/citas/:id/videollamada` en `backend/src/routes/citaRoutes.js`, asegurando que el `idPaciente` se valide contra el token o cuerpo autenticado.
   - *Prueba de verificación:* Intentar llamar a `POST /api/citas/agendar` sin token y verificar que devuelve `401 Acceso denegado`; luego agendar una cita desde el Dashboard logueado y verificar que funciona normal.
-- [ ] **6.3.2 Validación de Esquemas de Entrada con Zod (Injection/XSS - A03):** Crear un validador en `backend/src/middlewares/validateMiddleware.js` usando `zod` (que ya está instalado en `package.json`) para validar y limpiar los datos de entrada en login, registro y agendamiento de citas.
+- [x] **6.3.2 Validación de Esquemas de Entrada con Zod (Injection/XSS - A03):** Crear un validador en `backend/src/middlewares/validateMiddleware.js` usando `zod` (que ya está instalado en `package.json`) para validar y limpiar los datos de entrada en login, registro y agendamiento de citas.
   - *Prueba de verificación:* Intentar enviar en el formulario de registro o login un correo mal formado o campos vacíos y verificar que el backend responde con un mensaje claro de validación.
-- [ ] **6.3.3 Cabeceras de Seguridad y Límite de Peticiones (Security Misconfiguration / Brute Force - A05/A07):** Configurar un limitador de intentos por IP en las rutas de `/api/auth/login` y `/api/auth/recuperar` en `backend/src/routes/authRoutes.js` para mitigar ataques de fuerza bruta, sin requerir librerías pesadas.
+- [x] **6.3.3 Cabeceras de Seguridad y Límite de Peticiones (Security Misconfiguration / Brute Force - A05/A07):** Configurar un limitador de intentos por IP en las rutas de `/api/auth/login` y `/api/auth/recuperar` en `backend/src/routes/authRoutes.js` para mitigar ataques de fuerza bruta, sin requerir librerías pesadas.
   - *Prueba de verificación:* Hacer 6 intentos fallidos seguidos de login y verificar que al 6.º intento el servidor bloquea temporalmente con mensaje de seguridad por exceso de intentos.
 
 ---
