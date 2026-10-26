@@ -63,6 +63,29 @@ class ConsultaService {
             duracion_minutos: duracion_minutos || 0
         });
     }
+
+    async obtenerHistorialPaciente(id_paciente, id_usuario, rol) {
+        const idPacienteLimpio = id_paciente ? String(id_paciente).trim() : '';
+        if (!idPacienteLimpio) {
+            throw new Error('ID de paciente inválido');
+        }
+
+        if (rol === 'PACIENTE') {
+            if (String(id_usuario) !== idPacienteLimpio) {
+                throw new Error('No tiene autorización para consultar el historial clínico de otro paciente');
+            }
+        } else if (rol === 'MEDICO') {
+            // RN-05: Un médico solo puede consultar el historial clínico de los pacientes que tienen citas asignadas con él
+            const tieneRelacion = await consultaRepository.verificarRelacionMedicoPaciente(id_usuario, idPacienteLimpio);
+            if (!tieneRelacion) {
+                throw new Error('Acceso restringido (RN-05): Solo puede consultar el historial clínico de pacientes con citas asignadas a usted');
+            }
+        } else {
+            throw new Error('Rol no autorizado para consultar historial clínico');
+        }
+
+        return await consultaRepository.obtenerHistorialPorPaciente(idPacienteLimpio);
+    }
 }
 
 module.exports = new ConsultaService();
