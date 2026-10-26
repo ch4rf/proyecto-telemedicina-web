@@ -3,7 +3,7 @@ const pool = require('../config/db');
 class BusquedaRepository {
     async buscarMedicos(termino) {
         const query = `
-            SELECT m.id_medico, m.nombres, m.apellidos, m.especialidad, u.correo
+            SELECT m.id_medico, m.nombres, m.apellidos, m.especialidad, m.disponibilidad, u.correo
             FROM medicos m
             JOIN usuarios u ON m.id_medico = u.id_usuario
             WHERE u.activo = TRUE 

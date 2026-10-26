@@ -19,8 +19,12 @@ export default function ModalPerfil({ isOpen, onClose, usuario, onPerfilActualiz
   const [alergias, setAlergias] = useState('');
   const [antecedentes, setAntecedentes] = useState('');
 
-  // Especialidad para médicos
+  // Especialidad y disponibilidad para médicos (Tarea 6.2.2)
   const [especialidad, setEspecialidad] = useState('');
+  const [diasDisponibles, setDiasDisponibles] = useState(['Lunes', 'Martes', 'Miércoles', 'Jueves', 'Viernes']);
+  const [horaInicio, setHoraInicio] = useState('08:00');
+  const [horaFin, setHoraFin] = useState('17:00');
+  const DIAS_SEMANA = ['Lunes', 'Martes', 'Miércoles', 'Jueves', 'Viernes', 'Sábado'];
 
   // Estados de control
   const [cargandoDatos, setCargandoDatos] = useState(false);
@@ -57,6 +61,15 @@ export default function ModalPerfil({ isOpen, onClose, usuario, onPerfilActualiz
             setAntecedentes(clinicos.antecedentes || '');
           } else if (u.rol === 'MEDICO') {
             setEspecialidad(u.especialidad || 'Medicina General');
+            let disp = u.disponibilidad;
+            if (typeof disp === 'string') {
+              try { disp = JSON.parse(disp); } catch { disp = []; }
+            }
+            if (Array.isArray(disp) && disp.length > 0) {
+              setDiasDisponibles(disp.map(d => d.dia).filter(Boolean));
+              if (disp[0].hora_inicio) setHoraInicio(disp[0].hora_inicio);
+              if (disp[0].hora_fin) setHoraFin(disp[0].hora_fin);
+            }
           }
         }
       } catch (err) {
@@ -110,6 +123,11 @@ export default function ModalPerfil({ isOpen, onClose, usuario, onPerfilActualiz
         };
       } else {
         payload.especialidad = especialidad.trim();
+        payload.disponibilidad = diasDisponibles.map(dia => ({
+          dia,
+          hora_inicio: horaInicio,
+          hora_fin: horaFin
+        }));
       }
 
       const res = await api.put('/usuarios/perfil', payload);
@@ -339,6 +357,61 @@ export default function ModalPerfil({ isOpen, onClose, usuario, onPerfilActualiz
                       <option value="Ginecología">Ginecología</option>
                       <option value="Traumatología">Traumatología</option>
                     </select>
+                  </div>
+
+                  {/* Disponibilidad Horaria Semanal (Tarea 6.2.2) */}
+                  <div className="mt-4 pt-3 border-t border-slate-100 space-y-3">
+                    <p className="text-xs font-bold text-slate-400 uppercase tracking-wider flex items-center gap-1.5">
+                      <Calendar className="w-3.5 h-3.5 text-teal-600" /> Horario de Disponibilidad Semanal
+                    </p>
+
+                    <div>
+                      <label className="block text-xs font-semibold text-slate-700 mb-1.5">Días de Atención</label>
+                      <div className="flex flex-wrap gap-1.5">
+                        {DIAS_SEMANA.map(dia => {
+                          const activo = diasDisponibles.includes(dia);
+                          return (
+                            <button
+                              key={dia}
+                              type="button"
+                              onClick={() => {
+                                setDiasDisponibles(prev =>
+                                  prev.includes(dia) ? prev.filter(d => d !== dia) : [...prev, dia]
+                                );
+                              }}
+                              className={`px-3 py-1.5 rounded-xl text-xs font-semibold border transition-all cursor-pointer ${
+                                activo
+                                  ? 'bg-teal-600 text-white border-teal-600 shadow-xs'
+                                  : 'bg-slate-50 text-slate-600 border-slate-200 hover:bg-slate-100'
+                              }`}
+                            >
+                              {dia}
+                            </button>
+                          );
+                        })}
+                      </div>
+                    </div>
+
+                    <div className="grid grid-cols-2 gap-3.5">
+                      <div>
+                        <label className="block text-xs font-semibold text-slate-700 mb-1">Hora de Inicio</label>
+                        <input
+                          type="time"
+                          value={horaInicio}
+                          onChange={(e) => setHoraInicio(e.target.value)}
+                          className="w-full px-3.5 py-2 text-sm bg-slate-50 border border-slate-200 rounded-xl focus:bg-white focus:ring-2 focus:ring-teal-500/20 focus:border-teal-500 outline-none transition-all"
+                        />
+                      </div>
+                      <div>
+                        <label className="block text-xs font-semibold text-slate-700 mb-1">Hora de Fin</label>
+                        <input
+                          type="time"
+                          value={horaFin}
+                          onChange={(e) => setHoraFin(e.target.value)}
+                          className="w-full px-3.5 py-2 text-sm bg-slate-50 border border-slate-200 rounded-xl focus:bg-white focus:ring-2 focus:ring-teal-500/20 focus:border-teal-500 outline-none transition-all"
+                        />
+                      </div>
+                    </div>
                   </div>
                 </div>
               )}

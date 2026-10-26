@@ -1,7 +1,7 @@
 const pool = require('../config/db');
 
 const getAllMedicos = async (especialidad = null) => {
-    let query = `SELECT id_medico, nombres, apellidos, especialidad FROM medicos`;
+    let query = `SELECT id_medico, nombres, apellidos, especialidad, disponibilidad FROM medicos`;
     const params = [];
     if (especialidad) {
         query += ` WHERE especialidad = $1`;

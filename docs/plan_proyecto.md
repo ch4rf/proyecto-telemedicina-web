@@ -103,11 +103,11 @@ Objetivo: Implementar cancelación de citas con reglas de negocio (RN-03), confi
 ### Módulo 6.2: Disponibilidad Horaria del Médico (RF-05 y RN-01)
 *Rama de Git asignada:* `feature/horarios-medicos`
 
-- [ ] **6.2.1 Retornar y Actualizar Disponibilidad en Backend:** Modificar `backend/src/repositories/medicoRepository.js` y `backend/src/repositories/userRepository.js` para que `getAllMedicos` y el perfil del médico incluyan el campo JSONB `disponibilidad`, y que `PUT /api/usuarios/perfil` permita al médico guardar su arreglo de días y horas de atención.
+- [x] **6.2.1 Retornar y Actualizar Disponibilidad en Backend:** Modificar `backend/src/repositories/medicoRepository.js` y `backend/src/repositories/userRepository.js` para que `getAllMedicos` y el perfil del médico incluyan el campo JSONB `disponibilidad`, y que `PUT /api/usuarios/perfil` permita al médico guardar su arreglo de días y horas de atención.
   - *Prueba de verificación:* Consultar `GET /api/medicos` en el navegador (`http://localhost:4000/api/medicos`) y comprobar que cada médico incluye la propiedad `disponibilidad` en el JSON.
-- [ ] **6.2.2 Interfaz de Configuración de Horario en ModalPerfil:** Agregar en `frontend/src/components/ModalPerfil.jsx` (cuando el usuario es `MEDICO`) un selector interactivo sencillo de días de atención (Lunes a Sábado) y rango de horas (ej. `08:00` a `17:00`) que se guarde al pulsar "Guardar Cambios".
+- [x] **6.2.2 Interfaz de Configuración de Horario en ModalPerfil:** Agregar en `frontend/src/components/ModalPerfil.jsx` (cuando el usuario es `MEDICO`) un selector interactivo sencillo de días de atención (Lunes a Sábado) y rango de horas (ej. `08:00` a `17:00`) que se guarde al pulsar "Guardar Cambios".
   - *Prueba de verificación:* Iniciar sesión como médico (`estuardo@email.com`), abrir "Mi Perfil", marcar días/horas de atención, guardar, volver a abrir el perfil y verificar que los horarios quedaron guardados en PostgreSQL.
-- [ ] **6.2.3 Visualización de Horario del Médico al Agendar Cita:** Mostrar en `frontend/src/components/ModalAgendarCita.jsx` y en la vista "Directorio Médico" de `Dashboard.jsx` los días y horarios en que atiende el médico seleccionado, advirtiendo al paciente si elige un día u hora fuera del horario del especialista.
+- [x] **6.2.3 Visualización de Horario del Médico al Agendar Cita:** Mostrar en `frontend/src/components/ModalAgendarCita.jsx` y en la vista "Directorio Médico" de `Dashboard.jsx` los días y horarios en que atiende el médico seleccionado, advirtiendo al paciente si elige un día u hora fuera del horario del especialista.
   - *Prueba de verificación:* Iniciar sesión como paciente (`paciente@test.com`), abrir "Agendar Nueva Cita", seleccionar al médico y comprobar que se muestra su horario disponible en pantalla antes de confirmar.
 
 ### Módulo 6.3: Blindaje de Seguridad OWASP Top 10

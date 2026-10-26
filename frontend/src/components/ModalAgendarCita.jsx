@@ -95,6 +95,17 @@ export default function ModalAgendarCita({
   const medicoActivo = medicos.find(m => m.id_medico === medicoSeleccionado);
   const pacienteActivo = pacientes.find(p => p.id_paciente === pacienteSeleccionado);
 
+  // Obtener lista normalizada de disponibilidad del médico activo (Tarea 6.2.3)
+  const obtenerDisponibilidadMedico = (med) => {
+    if (!med?.disponibilidad) return [];
+    let disp = med.disponibilidad;
+    if (typeof disp === 'string') {
+      try { disp = JSON.parse(disp); } catch { return []; }
+    }
+    return Array.isArray(disp) ? disp : [];
+  };
+  const disponibilidadActiva = obtenerDisponibilidadMedico(medicoActivo);
+
   // Atajos rápidos para la fecha
   const aplicarAtajoFecha = (diasAdicionales) => {
     const targetDate = new Date();
@@ -133,6 +144,32 @@ export default function ModalAgendarCita({
 
     if (fechaHoraCita <= ahora) {
       setMensajeError('La fecha y hora de la cita deben ser en el futuro.');
+      return;
+    }
+
+    // Validación RN-01: Verificar disponibilidad configurada por el médico (Tarea 6.2.3)
+    if (isPatient && disponibilidadActiva.length > 0) {
+      const nombresDias = ['Domingo', 'Lunes', 'Martes', 'Miércoles', 'Jueves', 'Viernes', 'Sábado'];
+      const diaElegido = nombresDias[fechaHoraCita.getDay()];
+      const bloqueDia = disponibilidadActiva.find(
+        d => d.dia && d.dia.toLowerCase() === diaElegido.toLowerCase()
+      );
+      const diasTexto = disponibilidadActiva.map(d => d.dia).join(', ');
+      const rangoTexto = `${disponibilidadActiva[0].hora_inicio || '08:00'} a ${disponibilidadActiva[0].hora_fin || '17:00'}`;
+
+      if (!bloqueDia) {
+        setMensajeError(`Horario no disponible (RN-01): El especialista atiende los días ${diasTexto} (${rangoTexto} hrs). Seleccionaste ${diaElegido}.`);
+        return;
+      }
+
+      if (bloqueDia.hora_inicio && bloqueDia.hora_fin) {
+        if (hora < bloqueDia.hora_inicio || hora > bloqueDia.hora_fin) {
+          setMensajeError(`Horario fuera de rango (RN-01): El especialista atiende los ${diaElegido} de ${bloqueDia.hora_inicio} a ${bloqueDia.hora_fin} hrs.`);
+          return;
+        }
+      }
+    }
+    if (false) {
       return;
     }
 
@@ -254,6 +291,11 @@ export default function ModalAgendarCita({
                       <div className="flex-1">
                         <p className="text-xs font-bold text-slate-800">{medicoActivo.nombres} {medicoActivo.apellidos}</p>
                         <p className="text-[11px] font-semibold text-teal-700">{medicoActivo.especialidad}</p>
+                        {disponibilidadActiva.length > 0 && (
+                          <p className="text-[11px] text-slate-600 mt-0.5">
+                            Horario: <span className="font-semibold">{disponibilidadActiva.map(d => d.dia).join(', ')}</span> ({disponibilidadActiva[0].hora_inicio} - {disponibilidadActiva[0].hora_fin} hrs)
+                          </p>
+                        )}
                       </div>
                       <span className="text-[10px] font-medium bg-white text-teal-700 px-2.5 py-1 rounded-full border border-teal-200">
                         HD Encriptado

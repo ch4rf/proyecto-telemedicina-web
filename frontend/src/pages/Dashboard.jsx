@@ -1261,6 +1261,14 @@ export default function Dashboard() {
                           <p className="text-xs text-slate-500 mt-3 leading-relaxed">
                             Médico especialista activo con disponibilidad de atención remota por videollamada y emisión de recetas oficiales.
                           </p>
+                          {Array.isArray(med.disponibilidad) && med.disponibilidad.length > 0 && (
+                            <div className="mt-3 p-2.5 bg-slate-50 border border-slate-100 rounded-xl text-[11px] text-slate-600">
+                              <span className="font-semibold text-slate-700">Atención: </span>
+                              {med.disponibilidad.map(d => d.dia).join(', ')} ({med.disponibilidad[0].hora_inicio} - {med.disponibilidad[0].hora_fin} hrs)
+                            </div>
+                          )}
+                          <p className="hidden">
+                          </p>
                         </div>
 
                         <div className="mt-5 pt-4 border-t border-slate-100 flex items-center justify-between">
