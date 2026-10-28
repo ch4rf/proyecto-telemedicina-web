@@ -93,11 +93,69 @@ class ConsultaController {
     async getCatalogoMedicamentos(req, res) {
         try {
             const q = req.query.q || '';
-            const catalogo = await consultaService.buscarCatalogoMedicamentos(q);
+            const sincronizar = req.query.sync === 'true';
+            const catalogo = await consultaService.buscarCatalogoMedicamentos(q, sincronizar);
             return res.status(200).json({
                 ok: true,
                 total: catalogo.length,
                 data: catalogo
+            });
+        } catch (error) {
+            return res.status(400).json({
+                ok: false,
+                error: error.message
+            });
+        }
+    }
+
+    async crearMedicamentoCatalogo(req, res) {
+        try {
+            const id_usuario = req.usuario.id;
+            const rol = req.usuario.rol;
+            const nuevo = await consultaService.agregarMedicamentoCatalogo(id_usuario, rol, req.body);
+            return res.status(201).json({
+                ok: true,
+                mensaje: 'Medicamento registrado exitosamente en el catálogo',
+                data: nuevo
+            });
+        } catch (error) {
+            const status = error.message.includes('Solo los médicos') ? 403 : 400;
+            return res.status(status).json({
+                ok: false,
+                error: error.message
+            });
+        }
+    }
+
+    async eliminarMedicamentoCatalogo(req, res) {
+        try {
+            const id_usuario = req.usuario.id;
+            const rol = req.usuario.rol;
+            const { id } = req.params;
+            const eliminado = await consultaService.eliminarMedicamentoCatalogo(id_usuario, rol, id);
+            return res.status(200).json({
+                ok: true,
+                mensaje: 'Medicamento eliminado del catálogo',
+                data: eliminado
+            });
+        } catch (error) {
+            const status = error.message.includes('Solo los médicos') ? 403 : 400;
+            return res.status(status).json({
+                ok: false,
+                error: error.message
+            });
+        }
+    }
+
+    async notificarDescargaReceta(req, res) {
+        try {
+            const id_usuario = req.usuario.id;
+            const rol = req.usuario.rol;
+            const notif = await consultaService.registrarDescargaReceta(id_usuario, rol, req.body);
+            return res.status(201).json({
+                ok: true,
+                mensaje: 'Notificación de descarga registrada',
+                data: notif
             });
         } catch (error) {
             return res.status(400).json({

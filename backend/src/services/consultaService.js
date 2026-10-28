@@ -1,6 +1,7 @@
 const consultaRepository = require('../repositories/consultaRepository');
 const citaRepository = require('../repositories/citaRepository');
 const medicamentoRepository = require('../repositories/medicamentoRepository');
+const notificacionRepository = require('../repositories/notificacionRepository');
 
 class ConsultaService {
     async registrarAtencion(id_medico, datos) {
@@ -88,16 +89,15 @@ class ConsultaService {
         return await consultaRepository.obtenerHistorialPorPaciente(idPacienteLimpio);
     }
 
-    async buscarCatalogoMedicamentos(termino = '') {
+    async buscarCatalogoMedicamentos(termino = '', sincronizarExterno = false) {
         const q = String(termino || '').trim();
-        let resultadosLocales = await medicamentoRepository.buscarPorTermino(q);
 
-        // Si el término tiene 3+ caracteres y hay pocos resultados locales, consultar API externa OpenFDA,
-        // procesar los datos, almacenarlos en PostgreSQL y devolverlos al usuario (Punto 4 de la Guía)
-        if (q.length >= 3 && resultadosLocales.length < 3 && typeof fetch === 'function') {
+        // Si el médico solicita explícitamente sincronizar desde la fuente externa OpenFDA (Punto 4 de la Guía),
+        // se consulta la API pública, se procesan los datos, se almacenan en PostgreSQL y se devuelven al usuario.
+        if (sincronizarExterno && q.length >= 3 && typeof fetch === 'function') {
             try {
                 const controller = new AbortController();
-                const timeout = setTimeout(() => controller.abort(), 3500);
+                const timeout = setTimeout(() => controller.abort(), 4500);
                 const url = `https://api.fda.gov/drug/label.json?search=openfda.brand_name:"${encodeURIComponent(q)}"+openfda.generic_name:"${encodeURIComponent(q)}"&limit=3`;
                 const response = await fetch(url, { signal: controller.signal });
                 clearTimeout(timeout);
@@ -123,14 +123,104 @@ class ConsultaService {
                             });
                         }
                     }
-                    resultadosLocales = await medicamentoRepository.buscarPorTermino(q);
                 }
             } catch (err) {
-                console.warn('[ConsultaService] Fallback a catálogo local PostgreSQL (OpenFDA no disponible o sin coincidencias):', err.message);
+                console.warn('[ConsultaService] Aviso al consultar OpenFDA API:', err.message);
             }
         }
 
-        return resultadosLocales;
+        return await medicamentoRepository.buscarPorTermino(q);
+    }
+
+    async agregarMedicamentoCatalogo(id_usuario, rol, datos) {
+        if (rol !== 'MEDICO') {
+            throw new Error('Solo los médicos especialistas pueden agregar medicamentos al catálogo clínico');
+        }
+
+        const nombre_comercial = String(datos.nombre_comercial || '').trim();
+        const principio_activo = String(datos.principio_activo || '').trim();
+        const presentacion = String(datos.presentacion || 'Tabletas / Cápsulas').trim();
+        const dosis_recomendada = String(datos.dosis_recomendada || '1 unidad').trim();
+        const frecuencia_recomendada = String(datos.frecuencia_recomendada || 'Cada 8 horas').trim();
+        const duracion_recomendada = String(datos.duracion_recomendada || '5 días').trim();
+
+        if (!nombre_comercial || !principio_activo) {
+            throw new Error('El nombre comercial y el principio activo son obligatorios');
+        }
+
+        const nuevoMed = await medicamentoRepository.guardarMedicamentoExterno({
+            nombre_comercial,
+            principio_activo,
+            presentacion,
+            dosis_recomendada,
+            frecuencia_recomendada,
+            duracion_recomendada,
+            fuente: 'Catálogo Médico NovaSalud'
+        });
+
+        try {
+            await notificacionRepository.crear(
+                id_usuario,
+                'Medicamento Agregado al Catálogo',
+                `Has registrado "${nombre_comercial}" (${principio_activo}) exitosamente en el catálogo clínico.`,
+                'INFO'
+            );
+        } catch (err) {
+            console.warn('Aviso al crear notificación de catálogo:', err.message);
+        }
+
+        return nuevoMed;
+    }
+
+    async eliminarMedicamentoCatalogo(id_usuario, rol, id_medicamento) {
+        if (rol !== 'MEDICO') {
+            throw new Error('Solo los médicos especialistas pueden eliminar medicamentos del catálogo');
+        }
+        const idLimpio = String(id_medicamento || '').trim();
+        if (!idLimpio) {
+            throw new Error('ID de medicamento requerido');
+        }
+        const eliminado = await medicamentoRepository.eliminarPorId(idLimpio);
+        if (!eliminado) {
+            throw new Error('Medicamento no encontrado en el catálogo');
+        }
+        return eliminado;
+    }
+
+    async registrarDescargaReceta(id_usuario, rol, datos = {}) {
+        const folio = String(datos.folio || 'REC').trim();
+        const id_cita = datos.id_cita || null;
+
+        // 1. Notificar al usuario que realizó la descarga (paciente o médico)
+        const notifUsuario = await notificacionRepository.crear(
+            id_usuario,
+            'Receta Médica Descargada (PDF)',
+            `Has descargado exitosamente el documento oficial en PDF de la receta médica #${folio}.`,
+            'RECETA'
+        );
+
+        // 2. Si viene id_cita, notificar también a la contraparte (médico o paciente) como en el agendamiento de citas
+        if (id_cita) {
+            try {
+                const cita = await citaRepository.getCitaById(id_cita);
+                if (cita) {
+                    const idContraparte = rol === 'PACIENTE' ? cita.id_medico : cita.id_paciente;
+                    if (idContraparte && String(idContraparte) !== String(id_usuario)) {
+                        const actor = rol === 'PACIENTE' ? 'El paciente' : 'El médico especialista';
+                        await notificacionRepository.crear(
+                            idContraparte,
+                            'Descarga de Receta Médica',
+                            `${actor} ha descargado en PDF la receta médica #${folio} asociada a su consulta.`,
+                            'RECETA'
+                        );
+                    }
+                }
+            } catch (err) {
+                console.warn('Aviso al notificar contraparte por descarga de receta:', err.message);
+            }
+        }
+
+        return notifUsuario;
     }
 }
 

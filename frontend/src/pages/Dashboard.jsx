@@ -2,7 +2,7 @@ import React, { useState, useEffect, useRef } from 'react';
 import { 
   Activity, LayoutDashboard, CalendarDays, Users, FileText, LogOut, 
   Search, Bell, User, X, Loader2, Stethoscope, Clock, CheckCircle2, Check,
-  Menu, Filter, Pill, ChevronRight, Video, Calendar, ArrowRight
+  Menu, Filter, Pill, ChevronRight, Video, Calendar, ArrowRight, Trash2
 } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
@@ -50,6 +50,12 @@ export default function Dashboard() {
 
   useEffect(() => {
     cargarNotificaciones();
+  }, []);
+
+  useEffect(() => {
+    const handleRefrescarNotif = () => cargarNotificaciones();
+    window.addEventListener('notificaciones-actualizadas', handleRefrescarNotif);
+    return () => window.removeEventListener('notificaciones-actualizadas', handleRefrescarNotif);
   }, []);
 
   // Marcar notificación individual como leída
@@ -171,6 +177,23 @@ export default function Dashboard() {
   const [recetasList, setRecetasList] = useState([]);
   const [cargandoRecetas, setCargandoRecetas] = useState(false);
 
+  // Estados de Catálogo de Medicamentos para el Médico (Tarea M.3)
+  const [catalogoList, setCatalogoList] = useState([]);
+  const [cargandoCatalogo, setCargandoCatalogo] = useState(false);
+  const [busquedaCatalogo, setBusquedaCatalogo] = useState('');
+  const [nuevoMed, setNuevoMed] = useState({
+    nombre_comercial: '',
+    principio_activo: '',
+    presentacion: '',
+    dosis_recomendada: '',
+    frecuencia_recomendada: '',
+    duracion_recomendada: ''
+  });
+  const [guardandoMed, setGuardandoMed] = useState(false);
+  const [sincronizandoFDA, setSincronizandoFDA] = useState(false);
+  const [mensajeCatalogo, setMensajeCatalogo] = useState('');
+  const [errorCatalogo, setErrorCatalogo] = useState('');
+
   // Estados de Métricas y KPIs (Tarea 5.4.6)
   const [metricas, setMetricas] = useState({
     citas_activas: 0,
@@ -241,6 +264,83 @@ export default function Dashboard() {
     }
   };
 
+  const cargarCatalogo = async (termino = '', sincronizar = false) => {
+    try {
+      setCargandoCatalogo(true);
+      const syncParam = sincronizar ? '&sync=true' : '';
+      const res = await api.get(`/consultas/medicamentos/catalogo?q=${encodeURIComponent(termino)}${syncParam}`);
+      const lista = Array.isArray(res) ? res : (res?.data || []);
+      setCatalogoList(lista);
+    } catch (err) {
+      console.error('Error al cargar catálogo de medicamentos:', err.message);
+    } finally {
+      setCargandoCatalogo(false);
+    }
+  };
+
+  const handleImportarOpenFDA = async () => {
+    setMensajeCatalogo('');
+    setErrorCatalogo('');
+    if (!busquedaCatalogo || busquedaCatalogo.trim().length < 3) {
+      setErrorCatalogo('Escribe al menos 3 letras en el buscador (ej. Aspirin, Naproxen) para importar desde OpenFDA.');
+      return;
+    }
+    try {
+      setSincronizandoFDA(true);
+      await cargarCatalogo(busquedaCatalogo.trim(), true);
+      setMensajeCatalogo(`Sincronización con OpenFDA completada para "${busquedaCatalogo.trim()}". Los resultados fueron procesados y guardados en PostgreSQL.`);
+      setTimeout(() => setMensajeCatalogo(''), 5000);
+    } catch (err) {
+      setErrorCatalogo(err.message || 'Error al sincronizar con OpenFDA');
+    } finally {
+      setSincronizandoFDA(false);
+    }
+  };
+
+  const handleEliminarMedicamentoCatalogo = async (idMedicamento, nombreComercial) => {
+    if (!idMedicamento) return;
+    setMensajeCatalogo('');
+    setErrorCatalogo('');
+    try {
+      await api.delete(`/consultas/medicamentos/catalogo/${idMedicamento}`);
+      setCatalogoList(prev => prev.filter(item => item.id_medicamento !== idMedicamento));
+      setMensajeCatalogo(`"${nombreComercial}" fue eliminado correctamente del catálogo en PostgreSQL.`);
+      setTimeout(() => setMensajeCatalogo(''), 4000);
+    } catch (err) {
+      setErrorCatalogo(err.message || 'Error al eliminar medicamento del catálogo');
+    }
+  };
+
+  const handleAgregarMedicamentoCatalogo = async (e) => {
+    e.preventDefault();
+    setMensajeCatalogo('');
+    setErrorCatalogo('');
+    if (!nuevoMed.nombre_comercial.trim() || !nuevoMed.principio_activo.trim()) {
+      setErrorCatalogo('El nombre comercial y el principio activo son obligatorios.');
+      return;
+    }
+    try {
+      setGuardandoMed(true);
+      await api.post('/consultas/medicamentos/catalogo', nuevoMed);
+      setMensajeCatalogo(`"${nuevoMed.nombre_comercial}" fue agregado exitosamente al catálogo en PostgreSQL.`);
+      setNuevoMed({
+        nombre_comercial: '',
+        principio_activo: '',
+        presentacion: '',
+        dosis_recomendada: '',
+        frecuencia_recomendada: '',
+        duracion_recomendada: ''
+      });
+      cargarCatalogo(busquedaCatalogo);
+      cargarNotificaciones();
+      setTimeout(() => setMensajeCatalogo(''), 4000);
+    } catch (err) {
+      setErrorCatalogo(err.message || 'Error al registrar medicamento');
+    } finally {
+      setGuardandoMed(false);
+    }
+  };
+
   // Carga inicial y reactiva cada vez que cambia el usuario autenticado
   useEffect(() => {
     if (usuario?.id_usuario) {
@@ -260,6 +360,8 @@ export default function Dashboard() {
       cargarMedicos();
     } else if (vistaActiva === 'expedientes') {
       cargarRecetas();
+    } else if (vistaActiva === 'catalogo') {
+      cargarCatalogo(busquedaCatalogo);
     }
   }, [vistaActiva]);
 
@@ -269,7 +371,9 @@ export default function Dashboard() {
     .sort((a, b) => new Date(a.fecha_hora) - new Date(b.fecha_hora));
 
   // Próxima cita más inmediata (desde métricas del backend o lista de citas activas) (Tarea 5.4.7)
-  const proximaCita = metricas.proxima_cita || citasProgramadas[0] || citasList[0] || null;
+  const proximaCita = (metricas.proxima_cita && metricas.proxima_cita.estado === 'PROGRAMADA' && (!citasList.length || citasProgramadas.some(c => c.id_cita === metricas.proxima_cita.id_cita)))
+    ? metricas.proxima_cita
+    : (citasProgramadas[0] || null);
 
   // Saludo contextual personalizado para el Banner (Tarea 5.4.7)
   const nombreUsuario = usuario?.nombres 
@@ -350,6 +454,20 @@ export default function Dashboard() {
             <FileText className="w-5 h-5" />
             <span>{isPatient ? 'Mis Recetas' : 'Expedientes'}</span>
           </button>
+          {!isPatient && (
+            <button
+              type="button"
+              onClick={() => setVistaActiva('catalogo')}
+              className={`flex items-center gap-3 px-3 py-2.5 w-full rounded-xl transition-all cursor-pointer ${
+                vistaActiva === 'catalogo'
+                  ? 'bg-teal-500/10 text-teal-400 border border-teal-500/20 font-semibold'
+                  : 'text-slate-400 hover:bg-slate-800 hover:text-white font-medium'
+              }`}
+            >
+              <Pill className="w-5 h-5" />
+              <span>Catálogo Médico</span>
+            </button>
+          )}
         </nav>
 
         <div className="p-4 border-t border-slate-800">
@@ -440,7 +558,21 @@ export default function Dashboard() {
                 <FileText className="w-5 h-5" />
                 <span>{isPatient ? 'Mis Recetas' : 'Expedientes'}</span>
               </button>
-            </nav>
+              {!isPatient && (
+            <button
+              type="button"
+              onClick={() => setVistaActiva('catalogo')}
+              className={`flex items-center gap-3 px-3 py-2.5 w-full rounded-xl transition-all cursor-pointer ${
+                vistaActiva === 'catalogo'
+                  ? 'bg-teal-500/10 text-teal-400 border border-teal-500/20 font-semibold'
+                  : 'text-slate-400 hover:bg-slate-800 hover:text-white font-medium'
+              }`}
+            >
+              <Pill className="w-5 h-5" />
+              <span>Catálogo Médico</span>
+            </button>
+          )}
+        </nav>
 
             <div className="p-4 border-t border-slate-800">
               <button 
@@ -475,6 +607,7 @@ export default function Dashboard() {
               {vistaActiva === 'citas' && 'Mis Citas Médicas'}
               {vistaActiva === 'directorio' && 'Directorio Médico'}
               {vistaActiva === 'expedientes' && (isPatient ? 'Mis Recetas y Diagnósticos' : 'Expedientes Clínicos')}
+              {vistaActiva === 'catalogo' && 'Catálogo Clínico de Medicamentos'}
             </h2>
           </div>
           
@@ -1286,6 +1419,204 @@ export default function Dashboard() {
                     ))}
                 </div>
               )}
+            </div>
+          )}
+
+          {/* VISTA 5: Catálogo Clínico de Medicamentos (Exclusivo Médico - Tarea M.3) */}
+          {!isPatient && vistaActiva === 'catalogo' && (
+            <div className="max-w-6xl mx-auto space-y-6 animate-fadeIn">
+              <div className="pb-4 border-b border-slate-200 flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+                <div>
+                  <h3 className="text-2xl font-bold text-slate-800">Catálogo Clínico de Medicamentos</h3>
+                  <p className="text-sm text-slate-500 mt-1">
+                    Administra el vademécum de medicamentos almacenado en PostgreSQL para el autocompletado en tus consultas y recetas.
+                  </p>
+                </div>
+                <span className="text-xs font-semibold bg-teal-50 text-teal-700 border border-teal-200 px-3 py-1.5 rounded-xl self-start sm:self-auto">
+                  Total registrados: {catalogoList.length}
+                </span>
+              </div>
+
+              {/* Formulario para Agregar Nuevo Medicamento */}
+              <form
+                onSubmit={handleAgregarMedicamentoCatalogo}
+                className="bg-white p-6 rounded-2xl border border-slate-200 shadow-sm space-y-4"
+              >
+                <div className="flex items-center justify-between">
+                  <h4 className="text-sm font-bold text-slate-800 flex items-center gap-2">
+                    <Pill className="w-4 h-4 text-teal-600" />
+                    <span>Registrar Nuevo Medicamento en el Catálogo</span>
+                  </h4>
+                  <span className="text-[11px] text-slate-400">Se guardará en PostgreSQL para futuras recetas</span>
+                </div>
+
+                {mensajeCatalogo && (
+                  <div className="p-3 bg-emerald-50 border border-emerald-200 rounded-xl text-emerald-700 text-xs font-semibold flex items-center gap-2">
+                    <Check className="w-4 h-4 text-emerald-600 shrink-0" />
+                    <span>{mensajeCatalogo}</span>
+                  </div>
+                )}
+
+                {errorCatalogo && (
+                  <div className="p-3 bg-rose-50 border border-rose-200 rounded-xl text-rose-700 text-xs font-semibold">
+                    {errorCatalogo}
+                  </div>
+                )}
+
+                <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
+                  <div>
+                    <label className="text-xs font-semibold text-slate-700 block mb-1">Nombre Comercial *</label>
+                    <input
+                      type="text"
+                      required
+                      value={nuevoMed.nombre_comercial}
+                      onChange={(e) => setNuevoMed(prev => ({ ...prev, nombre_comercial: e.target.value }))}
+                      placeholder="Ej. Sertal Compuesto 125mg"
+                      className="w-full p-2.5 bg-slate-50 border border-slate-200 rounded-xl text-xs focus:ring-2 focus:ring-teal-500/20 focus:border-teal-500 focus:bg-white outline-none text-slate-800"
+                    />
+                  </div>
+                  <div>
+                    <label className="text-xs font-semibold text-slate-700 block mb-1">Principio Activo *</label>
+                    <input
+                      type="text"
+                      required
+                      value={nuevoMed.principio_activo}
+                      onChange={(e) => setNuevoMed(prev => ({ ...prev, principio_activo: e.target.value }))}
+                      placeholder="Ej. Propinoxato + Clonixinato de Lisina"
+                      className="w-full p-2.5 bg-slate-50 border border-slate-200 rounded-xl text-xs focus:ring-2 focus:ring-teal-500/20 focus:border-teal-500 focus:bg-white outline-none text-slate-800"
+                    />
+                  </div>
+                  <div>
+                    <label className="text-xs font-semibold text-slate-700 block mb-1">Presentación</label>
+                    <input
+                      type="text"
+                      value={nuevoMed.presentacion}
+                      onChange={(e) => setNuevoMed(prev => ({ ...prev, presentacion: e.target.value }))}
+                      placeholder="Ej. Tabletas recubiertas"
+                      className="w-full p-2.5 bg-slate-50 border border-slate-200 rounded-xl text-xs focus:ring-2 focus:ring-teal-500/20 focus:border-teal-500 focus:bg-white outline-none text-slate-800"
+                    />
+                  </div>
+                  <div>
+                    <label className="text-xs font-semibold text-slate-700 block mb-1">Dosis Habitual Sugerida</label>
+                    <input
+                      type="text"
+                      value={nuevoMed.dosis_recomendada}
+                      onChange={(e) => setNuevoMed(prev => ({ ...prev, dosis_recomendada: e.target.value }))}
+                      placeholder="Ej. 1 tableta (125mg)"
+                      className="w-full p-2.5 bg-slate-50 border border-slate-200 rounded-xl text-xs focus:ring-2 focus:ring-teal-500/20 focus:border-teal-500 focus:bg-white outline-none text-slate-800"
+                    />
+                  </div>
+                  <div>
+                    <label className="text-xs font-semibold text-slate-700 block mb-1">Frecuencia Sugerida</label>
+                    <input
+                      type="text"
+                      value={nuevoMed.frecuencia_recomendada}
+                      onChange={(e) => setNuevoMed(prev => ({ ...prev, frecuencia_recomendada: e.target.value }))}
+                      placeholder="Ej. Cada 8 horas"
+                      className="w-full p-2.5 bg-slate-50 border border-slate-200 rounded-xl text-xs focus:ring-2 focus:ring-teal-500/20 focus:border-teal-500 focus:bg-white outline-none text-slate-800"
+                    />
+                  </div>
+                  <div>
+                    <label className="text-xs font-semibold text-slate-700 block mb-1">Duración Sugerida</label>
+                    <input
+                      type="text"
+                      value={nuevoMed.duracion_recomendada}
+                      onChange={(e) => setNuevoMed(prev => ({ ...prev, duracion_recomendada: e.target.value }))}
+                      placeholder="Ej. 3 a 5 días"
+                      className="w-full p-2.5 bg-slate-50 border border-slate-200 rounded-xl text-xs focus:ring-2 focus:ring-teal-500/20 focus:border-teal-500 focus:bg-white outline-none text-slate-800"
+                    />
+                  </div>
+                </div>
+
+                <div className="flex justify-end pt-1">
+                  <button
+                    type="submit"
+                    disabled={guardandoMed}
+                    className="px-5 py-2.5 bg-teal-600 hover:bg-teal-700 text-white text-xs font-semibold rounded-xl shadow-sm hover:shadow transition-all flex items-center gap-2 cursor-pointer disabled:opacity-50"
+                  >
+                    {guardandoMed ? <Loader2 className="w-4 h-4 animate-spin" /> : <Pill className="w-4 h-4" />}
+                    <span>{guardandoMed ? 'Guardando en PostgreSQL...' : 'Agregar Medicamento al Catálogo'}</span>
+                  </button>
+                </div>
+              </form>
+
+              {/* Buscador y Listado del Catálogo */}
+              <div className="bg-white p-6 rounded-2xl border border-slate-200 shadow-sm space-y-4">
+                <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+                  <h4 className="text-sm font-bold text-slate-800">Medicamentos Disponibles en Base de Datos</h4>
+                  <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-2 w-full sm:w-auto">
+                    <div className="relative w-full sm:w-64">
+                      <Search className="w-4 h-4 text-slate-400 absolute left-3 top-1/2 -translate-y-1/2" />
+                      <input
+                        type="text"
+                        value={busquedaCatalogo}
+                        onChange={(e) => {
+                          setBusquedaCatalogo(e.target.value);
+                          cargarCatalogo(e.target.value, false);
+                        }}
+                        placeholder="Filtrar catálogo o buscar fármaco..."
+                        className="w-full pl-9 pr-3 py-2 bg-slate-50 border border-slate-200 rounded-xl text-xs focus:ring-2 focus:ring-teal-500/20 focus:border-teal-500 focus:bg-white outline-none text-slate-800"
+                      />
+                    </div>
+                    <button
+                      type="button"
+                      onClick={handleImportarOpenFDA}
+                      disabled={sincronizandoFDA}
+                      title="Consultar la API pública de OpenFDA y guardar resultados en PostgreSQL"
+                      className="px-3.5 py-2 bg-slate-900 hover:bg-slate-800 text-white text-xs font-semibold rounded-xl transition-all flex items-center justify-center gap-1.5 cursor-pointer disabled:opacity-50 whitespace-nowrap shadow-xs"
+                    >
+                      {sincronizandoFDA ? <Loader2 className="w-3.5 h-3.5 animate-spin text-teal-400" /> : <Activity className="w-3.5 h-3.5 text-teal-400" />}
+                      <span>{sincronizandoFDA ? 'Sincronizando...' : 'Importar de OpenFDA'}</span>
+                    </button>
+                  </div>
+                </div>
+
+                {cargandoCatalogo ? (
+                  <div className="py-12 flex flex-col items-center justify-center text-slate-400 gap-2">
+                    <Loader2 className="w-6 h-6 animate-spin text-teal-600" />
+                    <span className="text-xs">Consultando catálogo de medicamentos...</span>
+                  </div>
+                ) : catalogoList.length === 0 ? (
+                  <div className="py-8 text-center text-slate-400 text-xs">
+                    No se encontraron medicamentos con ese criterio.
+                  </div>
+                ) : (
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-3.5">
+                    {catalogoList.map((item, idx) => (
+                      <div
+                        key={item.id_medicamento || idx}
+                        className="p-4 rounded-xl border border-slate-200 hover:border-teal-200 bg-slate-50/50 flex flex-col justify-between gap-2 transition-colors"
+                      >
+                        <div className="flex items-start justify-between gap-2">
+                          <div>
+                            <h5 className="text-sm font-bold text-slate-800">{item.nombre_comercial}</h5>
+                            <p className="text-xs text-teal-700 font-medium">{item.principio_activo}</p>
+                          </div>
+                          <div className="flex items-center gap-1.5 shrink-0">
+                            <span className="text-[10px] font-semibold px-2 py-0.5 rounded-full bg-white border border-slate-200 text-slate-500">
+                              {item.fuente || 'PostgreSQL'}
+                            </span>
+                            <button
+                              type="button"
+                              onClick={() => handleEliminarMedicamentoCatalogo(item.id_medicamento, item.nombre_comercial)}
+                              className="text-slate-400 hover:text-rose-600 p-1.5 rounded-lg hover:bg-rose-50 transition-colors cursor-pointer"
+                              title="Eliminar medicamento del catálogo"
+                            >
+                              <Trash2 className="w-3.5 h-3.5" />
+                            </button>
+                          </div>
+                        </div>
+                        <div className="text-xs text-slate-600 grid grid-cols-2 gap-1 pt-2 border-t border-slate-200/60">
+                          <span><strong>Presentación:</strong> {item.presentacion || 'N/A'}</span>
+                          <span><strong>Dosis:</strong> {item.dosis_recomendada || 'N/A'}</span>
+                          <span><strong>Frecuencia:</strong> {item.frecuencia_recomendada || 'N/A'}</span>
+                          <span><strong>Duración:</strong> {item.duracion_recomendada || 'N/A'}</span>
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                )}
+              </div>
             </div>
           )}
 

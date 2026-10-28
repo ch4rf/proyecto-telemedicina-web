@@ -9,6 +9,15 @@ router.post('/', verificarToken, (req, res) => consultaController.finalizarConsu
 // Obtener catálogo de medicamentos desde PostgreSQL / OpenFDA (Punto 4 de la Guía)
 router.get('/medicamentos/catalogo', verificarToken, (req, res) => consultaController.getCatalogoMedicamentos(req, res));
 
+// Agregar nuevo medicamento al catálogo en PostgreSQL (exclusivo médico)
+router.post('/medicamentos/catalogo', verificarToken, (req, res) => consultaController.crearMedicamentoCatalogo(req, res));
+
+// Eliminar medicamento del catálogo en PostgreSQL (exclusivo médico)
+router.delete('/medicamentos/catalogo/:id', verificarToken, (req, res) => consultaController.eliminarMedicamentoCatalogo(req, res));
+
+// Registrar notificación de descarga de receta en PDF (paciente y médico)
+router.post('/recetas/notificar-descarga', verificarToken, (req, res) => consultaController.notificarDescargaReceta(req, res));
+
 // Obtener detalles de consulta y receta de una cita en particular
 router.get('/cita/:id_cita', verificarToken, (req, res) => consultaController.getConsultaPorCita(req, res));
 
