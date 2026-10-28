@@ -2,11 +2,22 @@ import React, { useState, useEffect, useRef } from 'react';
 import { 
   Mic, MicOff, Video, VideoOff, PhoneOff, MonitorUp, MonitorOff, FileText, 
   Pill, Save, Loader2, AlertCircle, Camera, CheckCircle2, User, Mail, Phone,
-  Stethoscope, Activity, Plus, Trash2, Clock, ChevronDown, ChevronUp
+  Stethoscope, Activity, Plus, Trash2, Clock, ChevronDown, ChevronUp,
+  MessageSquare, Send, X
 } from 'lucide-react';
 import { useNavigate, useParams } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
 import { api } from '../services/api';
+import { io } from 'socket.io-client';
+
+const SOCKET_SERVER_URL = (import.meta.env.VITE_API_URL || 'http://localhost:4000/api').replace(/\/api\/?$/, '');
+const RTC_CONFIG = {
+  iceServers: [
+    { urls: 'stun:stun.l.google.com:19302' },
+    { urls: 'stun:stun1.l.google.com:19302' },
+    { urls: 'stun:stun.cloudflare.com:3478' }
+  ]
+};
 
 export default function Videollamada() {
   const navigate = useNavigate();
@@ -25,6 +36,27 @@ export default function Videollamada() {
   // Referencias para Compartir Pantalla (Tarea 5.5.3)
   const screenVideoRef = useRef(null);
   const screenStreamRef = useRef(null);
+
+  // Referencias y estados WebRTC / Socket.io en Tiempo Real (Tarea 8.2.1 y 8.2.2)
+  const remoteVideoRef = useRef(null);
+  const remoteStreamRef = useRef(null);
+  const peerConnectionRef = useRef(null);
+  const socketRef = useRef(null);
+  const candidatosPendientesRef = useRef([]);
+  const [remotoConectado, setRemotoConectado] = useState(false);
+  const [nombreRemoto, setNombreRemoto] = useState('');
+  const [remotoCamaraActiva, setRemotoCamaraActiva] = useState(true);
+  const [remotoMicActivo, setRemotoMicActivo] = useState(true);
+  const [remotoCompartiendoPantalla, setRemotoCompartiendoPantalla] = useState(false);
+  const [remotoSalioDeLlamada, setRemotoSalioDeLlamada] = useState(false);
+
+  // Estados y referencias del Chat Clínico en Vivo (Tarea 8.2.2)
+  const [mostrarChat, setMostrarChat] = useState(false);
+  const mostrarChatRef = useRef(false);
+  const [mensajesChat, setMensajesChat] = useState([]);
+  const [textoMensajeChat, setTextoMensajeChat] = useState('');
+  const [mensajesNoLeidos, setMensajesNoLeidos] = useState(0);
+  const chatFinRef = useRef(null);
 
   // Estados de control multimedia (Tarea 5.5.1 y 5.5.2)
   const [estadoPermiso, setEstadoPermiso] = useState('iniciando'); // 'iniciando' | 'concedido' | 'denegado'
@@ -114,6 +146,29 @@ export default function Videollamada() {
     if (screenVideoRef.current && screenVideoRef.current.srcObject) {
       detenerStreamTotal(screenVideoRef.current.srcObject);
       screenVideoRef.current.srcObject = null;
+    }
+
+    // 5. Cerrar conexión WebRTC y desconectar Socket.io de la sala
+    if (peerConnectionRef.current) {
+      try {
+        peerConnectionRef.current.close();
+      } catch (e) {
+        console.warn('[Videollamada] Error al cerrar peerConnection:', e);
+      }
+      peerConnectionRef.current = null;
+    }
+    if (remoteVideoRef.current) {
+      remoteVideoRef.current.srcObject = null;
+    }
+    remoteStreamRef.current = null;
+    if (socketRef.current) {
+      try {
+        socketRef.current.emit('salir-sala');
+        socketRef.current.disconnect();
+      } catch (e) {
+        console.warn('[Videollamada] Error al desconectar socket:', e);
+      }
+      socketRef.current = null;
     }
   };
 
@@ -446,6 +501,15 @@ export default function Videollamada() {
       track.enabled = nuevoEstado;
     });
     setMicActivo(nuevoEstado);
+
+    if (socketRef.current) {
+      socketRef.current.emit('estado-medios', {
+        roomId: cita?.url_videollamada || cita?.id_cita || roomId,
+        camaraActiva,
+        micActivo: nuevoEstado,
+        compartiendoPantalla
+      });
+    }
   };
 
   // Tarea 5.5.2: Control en tiempo real de Cámara
@@ -466,9 +530,18 @@ export default function Videollamada() {
       }
       localVideoRef.current.play().catch(() => {});
     }
+
+    if (socketRef.current) {
+      socketRef.current.emit('estado-medios', {
+        roomId: cita?.url_videollamada || cita?.id_cita || roomId,
+        camaraActiva: nuevoEstado,
+        micActivo,
+        compartiendoPantalla
+      });
+    }
   };
 
-  // Tarea 5.5.3: Transmisión de Pantalla mediante getDisplayMedia
+  // Tarea 5.5.3 y Tarea 8.2.2: Transmisión de Pantalla mediante getDisplayMedia y reemplazo de pista en vivo (replaceTrack)
   const iniciarCompartirPantalla = async () => {
     try {
       if (!navigator.mediaDevices || !navigator.mediaDevices.getDisplayMedia) {
@@ -487,8 +560,30 @@ export default function Videollamada() {
       screenStreamRef.current = screenStream;
       setCompartiendoPantalla(true);
 
-      // Sincronizar detención cuando el usuario pulsa el botón nativo del navegador ("Dejar de compartir")
       const videoTrack = screenStream.getVideoTracks()[0];
+
+      // Tarea 8.2.2: Enviar el video de la pantalla compartida en tiempo real al otro participante
+      if (videoTrack && peerConnectionRef.current) {
+        try {
+          const sender = peerConnectionRef.current.getSenders().find(s => s.track && s.track.kind === 'video');
+          if (sender) {
+            await sender.replaceTrack(videoTrack);
+          }
+        } catch (errReplace) {
+          console.warn('[WebRTC] No se pudo reemplazar el track por pantalla compartida:', errReplace);
+        }
+      }
+
+      if (socketRef.current) {
+        socketRef.current.emit('estado-medios', {
+          roomId: cita?.url_videollamada || cita?.id_cita || roomId,
+          camaraActiva,
+          micActivo,
+          compartiendoPantalla: true
+        });
+      }
+
+      // Sincronizar detención cuando el usuario pulsa el botón nativo del navegador ("Dejar de compartir")
       if (videoTrack) {
         videoTrack.onended = () => {
           detenerCompartirPantalla();
@@ -503,7 +598,7 @@ export default function Videollamada() {
     }
   };
 
-  const detenerCompartirPantalla = () => {
+  const detenerCompartirPantalla = async () => {
     if (screenStreamRef.current) {
       detenerStreamTotal(screenStreamRef.current);
       screenStreamRef.current = null;
@@ -512,6 +607,30 @@ export default function Videollamada() {
       screenVideoRef.current.srcObject = null;
     }
     setCompartiendoPantalla(false);
+
+    // Tarea 8.2.2: Restaurar la pista de cámara web en la conexión WebRTC cuando deja de compartir pantalla
+    if (peerConnectionRef.current && streamRef.current) {
+      const camTrack = streamRef.current.getVideoTracks()[0] || null;
+      if (camTrack) {
+        try {
+          const sender = peerConnectionRef.current.getSenders().find(s => s.track && s.track.kind === 'video');
+          if (sender) {
+            await sender.replaceTrack(camTrack);
+          }
+        } catch (errRestore) {
+          console.warn('[WebRTC] Error al restaurar pista de cámara:', errRestore);
+        }
+      }
+    }
+
+    if (socketRef.current) {
+      socketRef.current.emit('estado-medios', {
+        roomId: cita?.url_videollamada || cita?.id_cita || roomId,
+        camaraActiva,
+        micActivo,
+        compartiendoPantalla: false
+      });
+    }
   };
 
   const toggleCompartirPantalla = () => {
@@ -521,6 +640,45 @@ export default function Videollamada() {
       iniciarCompartirPantalla();
     }
   };
+
+  // Tarea 8.2.2: Control de apertura y envío de mensajes del Chat Clínico en Vivo
+  const togglePanelChat = () => {
+    setMostrarChat(prev => {
+      const nuevo = !prev;
+      mostrarChatRef.current = nuevo;
+      if (nuevo) {
+        setMensajesNoLeidos(0);
+      }
+      return nuevo;
+    });
+  };
+
+  const handleEnviarMensajeChat = (e) => {
+    e.preventDefault();
+    const texto = textoMensajeChat.trim();
+    if (!texto || !socketRef.current) return;
+
+    const codigoSala = cita?.url_videollamada || cita?.id_cita || roomId;
+    const nombreAutor = usuario?.nombres
+      ? `${usuario.nombres} ${usuario.apellidos || ''}`.trim()
+      : (isMedico ? 'Médico' : 'Paciente');
+
+    socketRef.current.emit('mensaje-chat', {
+      roomId: codigoSala,
+      texto,
+      autor: nombreAutor,
+      rol: usuario?.rol || (isMedico ? 'MEDICO' : 'PACIENTE'),
+      hora: new Date().toLocaleTimeString('es-GT', { hour: '2-digit', minute: '2-digit' })
+    });
+
+    setTextoMensajeChat('');
+  };
+
+  useEffect(() => {
+    if (mostrarChat && chatFinRef.current) {
+      chatFinRef.current.scrollIntoView({ behavior: 'smooth' });
+    }
+  }, [mensajesChat, mostrarChat]);
 
   // Asegurar la asignación del stream de pantalla cuando el video se renderiza
   useEffect(() => {
@@ -538,6 +696,16 @@ export default function Videollamada() {
       localVideoRef.current.play().catch(() => {});
     }
   }, [estadoPermiso, camaraActiva]);
+
+  // Asegurar la asignación del stream remoto al elemento <video ref={remoteVideoRef}>
+  useEffect(() => {
+    if (remotoConectado && remoteVideoRef.current && remoteStreamRef.current) {
+      if (remoteVideoRef.current.srcObject !== remoteStreamRef.current) {
+        remoteVideoRef.current.srcObject = remoteStreamRef.current;
+      }
+      remoteVideoRef.current.play().catch(() => {});
+    }
+  }, [remotoConectado, remotoCamaraActiva, compartiendoPantalla]);
 
   // Tarea 5.5.1: Captura Multimedia Real mediante getUserMedia con Blindaje Anti-Fugas
   useEffect(() => {
@@ -619,6 +787,277 @@ export default function Videollamada() {
     };
   }, []);
 
+  // Tarea 8.2.1 y 8.2.2: Conexión P2P en Tiempo Real (WebRTC + Socket.io) y Chat Clínico entre Médico y Paciente
+  const codigoSalaCanonico = cita?.url_videollamada || cita?.id_cita || roomId;
+
+  useEffect(() => {
+    if (cargandoCita || estadoPermiso === 'iniciando' || !codigoSalaCanonico || cita?.estado === 'CANCELADA') {
+      return;
+    }
+
+    let activo = true;
+    const socket = io(SOCKET_SERVER_URL, {
+      transports: ['websocket', 'polling']
+    });
+    socketRef.current = socket;
+
+    const datosUsuarioLocal = {
+      nombre: usuario?.nombres ? `${usuario.nombres} ${usuario.apellidos || ''}`.trim() : (isMedico ? 'Médico' : 'Paciente'),
+      rol: usuario?.rol || (isMedico ? 'MEDICO' : 'PACIENTE')
+    };
+
+    const procesarCandidatosPendientes = async (pc) => {
+      while (candidatosPendientesRef.current.length > 0) {
+        const cand = candidatosPendientesRef.current.shift();
+        try {
+          await pc.addIceCandidate(new RTCIceCandidate(cand));
+        } catch (err) {
+          console.warn('[WebRTC] Error al agregar candidato ICE pendiente:', err);
+        }
+      }
+    };
+
+    const crearPeerConnection = (targetSocketId) => {
+      if (peerConnectionRef.current) {
+        try {
+          peerConnectionRef.current.close();
+        } catch {}
+      }
+
+      const pc = new RTCPeerConnection(RTC_CONFIG);
+      peerConnectionRef.current = pc;
+
+      const streamRemoto = new MediaStream();
+      remoteStreamRef.current = streamRemoto;
+
+      // Adjuntar pistas locales de cámara/micrófono (o pantalla si está compartiendo)
+      if (streamRef.current) {
+        streamRef.current.getTracks().forEach(track => {
+          pc.addTrack(track, streamRef.current);
+        });
+        if (screenStreamRef.current) {
+          const screenTrack = screenStreamRef.current.getVideoTracks()[0];
+          const sender = pc.getSenders().find(s => s.track && s.track.kind === 'video');
+          if (screenTrack && sender) {
+            sender.replaceTrack(screenTrack).catch(() => {});
+          }
+        }
+      } else {
+        // Si en esta ventana no hay cámara disponible (ej. usada por otro navegador en la misma PC), habilitar recepción de video/audio
+        try {
+          pc.addTransceiver('video', { direction: 'recvonly' });
+          pc.addTransceiver('audio', { direction: 'recvonly' });
+        } catch (e) {
+          console.warn('[WebRTC] Aviso al agregar transceivers:', e);
+        }
+      }
+
+      pc.onicecandidate = (event) => {
+        if (event.candidate && socket.connected) {
+          socket.emit('webrtc-ice-candidate', {
+            roomId: codigoSalaCanonico,
+            to: targetSocketId,
+            candidate: event.candidate
+          });
+        }
+      };
+
+      pc.ontrack = (event) => {
+        if (!activo) return;
+        if (event.streams && event.streams[0]) {
+          remoteStreamRef.current = event.streams[0];
+        } else if (event.track) {
+          streamRemoto.addTrack(event.track);
+          remoteStreamRef.current = streamRemoto;
+        }
+        setRemotoConectado(true);
+        if (remoteVideoRef.current && remoteStreamRef.current) {
+          remoteVideoRef.current.srcObject = remoteStreamRef.current;
+          remoteVideoRef.current.play().catch(() => {});
+        }
+      };
+
+      pc.onconnectionstatechange = () => {
+        if (!activo) return;
+        if (pc.connectionState === 'connected') {
+          setRemotoConectado(true);
+        } else if (pc.connectionState === 'disconnected' || pc.connectionState === 'failed' || pc.connectionState === 'closed') {
+          setRemotoConectado(false);
+        }
+      };
+
+      return pc;
+    };
+
+    socket.on('connect', () => {
+      socket.emit('unirse-sala', {
+        roomId: codigoSalaCanonico,
+        usuario: datosUsuarioLocal
+      });
+    });
+
+    // Cuando entramos y ya había otro participante en la sala -> iniciamos la oferta WebRTC
+    socket.on('usuarios-en-sala', async ({ participantes }) => {
+      if (!activo || !Array.isArray(participantes) || participantes.length === 0) return;
+      const otro = participantes[0];
+      if (otro?.usuario?.nombre) {
+        setNombreRemoto(otro.usuario.nombre);
+      }
+      setRemotoSalioDeLlamada(false);
+      setRemotoConectado(true);
+
+      try {
+        const pc = crearPeerConnection(otro.socketId);
+        const offer = await pc.createOffer();
+        await pc.setLocalDescription(offer);
+        socket.emit('webrtc-offer', {
+          roomId: codigoSalaCanonico,
+          to: otro.socketId,
+          offer: pc.localDescription
+        });
+        socket.emit('estado-medios', {
+          roomId: codigoSalaCanonico,
+          camaraActiva: Boolean(streamRef.current && camaraActiva),
+          micActivo: Boolean(streamRef.current && micActivo),
+          compartiendoPantalla: Boolean(screenStreamRef.current)
+        });
+      } catch (err) {
+        console.error('[WebRTC] Error creando oferta SDP:', err);
+      }
+    });
+
+    // Cuando un nuevo participante se une después de nosotros
+    socket.on('usuario-conectado', ({ usuario: infoRemoto }) => {
+      if (!activo) return;
+      if (infoRemoto?.nombre) {
+        setNombreRemoto(infoRemoto.nombre);
+      }
+      setRemotoConectado(true);
+      socket.emit('estado-medios', {
+        roomId: codigoSalaCanonico,
+        camaraActiva: Boolean(streamRef.current && camaraActiva),
+        micActivo: Boolean(streamRef.current && micActivo),
+        compartiendoPantalla: Boolean(screenStreamRef.current)
+      });
+    });
+
+    // Recibir oferta SDP y responder con answer SDP
+    socket.on('webrtc-offer', async ({ from, offer, usuario: infoRemoto }) => {
+      if (!activo || !offer) return;
+      if (infoRemoto?.nombre) {
+        setNombreRemoto(infoRemoto.nombre);
+      }
+      setRemotoConectado(true);
+
+      try {
+        const pc = crearPeerConnection(from);
+        await pc.setRemoteDescription(new RTCSessionDescription(offer));
+        await procesarCandidatosPendientes(pc);
+
+        const answer = await pc.createAnswer();
+        await pc.setLocalDescription(answer);
+        socket.emit('webrtc-answer', {
+          roomId: codigoSalaCanonico,
+          to: from,
+          answer: pc.localDescription
+        });
+        socket.emit('estado-medios', {
+          roomId: codigoSalaCanonico,
+          camaraActiva: Boolean(streamRef.current && camaraActiva),
+          micActivo: Boolean(streamRef.current && micActivo),
+          compartiendoPantalla: Boolean(screenStreamRef.current)
+        });
+      } catch (err) {
+        console.error('[WebRTC] Error procesando oferta SDP:', err);
+      }
+    });
+
+    // Recibir respuesta SDP
+    socket.on('webrtc-answer', async ({ answer, usuario: infoRemoto }) => {
+      if (!activo || !answer || !peerConnectionRef.current) return;
+      if (infoRemoto?.nombre) {
+        setNombreRemoto(infoRemoto.nombre);
+      }
+      try {
+        await peerConnectionRef.current.setRemoteDescription(new RTCSessionDescription(answer));
+        await procesarCandidatosPendientes(peerConnectionRef.current);
+      } catch (err) {
+        console.error('[WebRTC] Error estableciendo respuesta SDP:', err);
+      }
+    });
+
+    // Recibir candidato ICE
+    socket.on('webrtc-ice-candidate', async ({ candidate }) => {
+      if (!activo || !candidate) return;
+      const pc = peerConnectionRef.current;
+      if (pc && pc.remoteDescription && pc.remoteDescription.type) {
+        try {
+          await pc.addIceCandidate(new RTCIceCandidate(candidate));
+        } catch (err) {
+          console.warn('[WebRTC] Error agregando candidato ICE:', err);
+        }
+      } else {
+        candidatosPendientesRef.current.push(candidate);
+      }
+    });
+
+    // Sincronización de estado de cámara/micrófono/pantalla del otro participante
+    socket.on('estado-medios-remoto', ({ camaraActiva: camRemota, micActivo: micRemoto, compartiendoPantalla: pantallaRemota }) => {
+      if (!activo) return;
+      if (typeof camRemota === 'boolean') setRemotoCamaraActiva(camRemota);
+      if (typeof micRemoto === 'boolean') setRemotoMicActivo(micRemoto);
+      if (typeof pantallaRemota === 'boolean') setRemotoCompartiendoPantalla(pantallaRemota);
+    });
+
+    // Tarea 8.2.2: Recepción de mensajes del Chat Clínico en Tiempo Real
+    socket.on('nuevo-mensaje-chat', (mensaje) => {
+      if (!activo || !mensaje) return;
+      setMensajesChat(prev => [...prev, mensaje]);
+      if (!mostrarChatRef.current && mensaje.senderSocketId !== socket.id) {
+        setMensajesNoLeidos(prev => prev + 1);
+      }
+    });
+
+    // Cuando el otro participante sale o se desconecta
+    socket.on('usuario-desconectado', ({ usuario: infoRemoto }) => {
+      if (!activo) return;
+      if (infoRemoto?.nombre) {
+        setNombreRemoto(infoRemoto.nombre);
+      }
+      setRemotoConectado(false);
+      setRemotoCompartiendoPantalla(false);
+      setRemotoSalioDeLlamada(true);
+      if (!activo) return;
+      setRemotoConectado(false);
+      setRemotoCompartiendoPantalla(false);
+      if (remoteVideoRef.current) {
+        remoteVideoRef.current.srcObject = null;
+      }
+      remoteStreamRef.current = null;
+      if (peerConnectionRef.current) {
+        try {
+          peerConnectionRef.current.close();
+        } catch {}
+        peerConnectionRef.current = null;
+      }
+    });
+
+    return () => {
+      activo = false;
+      if (peerConnectionRef.current) {
+        try {
+          peerConnectionRef.current.close();
+        } catch {}
+        peerConnectionRef.current = null;
+      }
+      try {
+        socket.emit('salir-sala');
+        socket.disconnect();
+      } catch {}
+      socketRef.current = null;
+    };
+  }, [cargandoCita, estadoPermiso, codigoSalaCanonico, cita?.estado]);
+
   return (
     <div className="flex h-screen bg-slate-900 font-sans overflow-hidden">
       {cita?.estado === 'CANCELADA' && (
@@ -677,7 +1116,7 @@ export default function Videollamada() {
           </div>
         </div>
 
-        {/* Video Principal (Remoto o Pantalla Compartida - Tarea 5.5.3) */}
+        {/* Video Principal (Remoto o Pantalla Compartida - Tarea 5.5.3 y Tarea 8.2.1) */}
         <div className="flex-1 bg-slate-950 flex items-center justify-center relative overflow-hidden">
           {compartiendoPantalla ? (
             <div className="w-full h-full relative flex items-center justify-center bg-black">
@@ -705,10 +1144,149 @@ export default function Videollamada() {
                 </button>
               </div>
             </div>
+          ) : remotoConectado ? (
+            <div className="w-full h-full relative flex items-center justify-center bg-slate-950">
+              <video
+                ref={remoteVideoRef}
+                autoPlay
+                playsInline
+                className={`w-full h-full ${remotoCompartiendoPantalla ? 'object-contain bg-black' : 'object-cover'} ${
+                  remotoCamaraActiva || remotoCompartiendoPantalla ? 'block' : 'hidden'
+                }`}
+              />
+
+              {!remotoCamaraActiva && !remotoCompartiendoPantalla && (
+                <div className="flex flex-col items-center justify-center text-center p-6 animate-fadeIn">
+                  <div className="w-24 h-24 rounded-full bg-slate-800/90 border-2 border-teal-500/40 flex items-center justify-center text-teal-400 font-bold text-2xl mb-3 shadow-xl">
+                    {(nombreRemoto || (isMedico ? cita?.paciente_nombres : cita?.medico_nombres) || 'PR')
+                      .substring(0, 2)
+                      .toUpperCase()}
+                  </div>
+                  <p className="text-base font-semibold text-white">
+                    {nombreRemoto || (isMedico
+                      ? `${cita?.paciente_nombres || 'Paciente'} ${cita?.paciente_apellidos || ''}`.trim()
+                      : `Dr(a). ${cita?.medico_nombres || 'Médico'} ${cita?.medico_apellidos || ''}`.trim())}
+                  </p>
+                  <span className="text-xs text-slate-400 mt-1 flex items-center gap-1.5">
+                    <VideoOff className="w-3.5 h-3.5 text-amber-400" /> Conectado en la sala (cámara apagada)
+                  </span>
+                </div>
+              )}
+
+              {/* Badge flotante del participante remoto */}
+              <div className="absolute top-20 left-6 bg-slate-900/80 backdrop-blur-md px-3.5 py-2 rounded-xl border border-slate-700/80 shadow-lg flex items-center gap-2.5 z-10">
+                <span className="w-2.5 h-2.5 rounded-full bg-emerald-400 shadow-[0_0_8px_rgba(52,211,153,0.8)]" />
+                <span className="text-xs font-semibold text-white">
+                  {nombreRemoto || (isMedico
+                    ? `${cita?.paciente_nombres || 'Paciente'} ${cita?.paciente_apellidos || ''}`.trim()
+                    : `Dr(a). ${cita?.medico_nombres || 'Médico'} ${cita?.medico_apellidos || ''}`.trim())}
+                </span>
+                {remotoCompartiendoPantalla && (
+                  <span className="px-2 py-0.5 bg-teal-500/20 text-teal-300 border border-teal-500/30 rounded-md text-[10px] font-semibold flex items-center gap-1">
+                    <MonitorUp className="w-3 h-3" /> Compartiendo pantalla
+                  </span>
+                )}
+                {!remotoMicActivo && (
+                  <span className="text-rose-400 inline-flex items-center" title="Micrófono remoto silenciado">
+                    <MicOff className="w-3.5 h-3.5" />
+                  </span>
+                )}
+              </div>
+            </div>
           ) : (
             <div className="text-slate-500 flex flex-col items-center">
               <VideoOff className="w-16 h-16 mb-4 opacity-30" />
-              <p className="text-lg">Esperando conexión de cámara remota...</p>
+              <p className="text-lg">
+                {remotoSalioDeLlamada
+                  ? (isMedico
+                      ? 'El paciente ha finalizado / salido de la videollamada.'
+                      : 'El médico ha finalizado / salido de la videollamada.')
+                  : 'Esperando conexión de cámara remota...'}
+              </p>
+            </div>
+          )}
+
+          {/* Panel Flotante de Chat Clínico en Vivo (Tarea 8.2.2) */}
+          {mostrarChat && (
+            <div className="absolute bottom-28 left-6 w-80 sm:w-96 h-96 bg-slate-900/95 backdrop-blur-md rounded-2xl border border-slate-700 shadow-2xl flex flex-col overflow-hidden z-30 animate-fadeIn">
+              <div className="px-4 py-3 bg-slate-800/90 border-b border-slate-700 flex items-center justify-between">
+                <div className="flex items-center gap-2">
+                  <div className="p-1.5 bg-teal-500/20 text-teal-400 rounded-lg">
+                    <MessageSquare className="w-4 h-4" />
+                  </div>
+                  <div>
+                    <h4 className="text-xs font-bold text-white">Chat de la Consulta</h4>
+                    <p className="text-[10px] text-slate-400">Mensajes en tiempo real en esta sala</p>
+                  </div>
+                </div>
+                <button
+                  type="button"
+                  onClick={togglePanelChat}
+                  className="text-slate-400 hover:text-white p-1 rounded-lg hover:bg-slate-700/60 transition-colors cursor-pointer"
+                >
+                  <X className="w-4 h-4" />
+                </button>
+              </div>
+
+              <div className="flex-1 overflow-y-auto p-3.5 space-y-2.5">
+                {mensajesChat.length === 0 ? (
+                  <div className="h-full flex flex-col items-center justify-center text-center text-slate-500 px-4">
+                    <MessageSquare className="w-8 h-8 mb-2 opacity-30" />
+                    <p className="text-xs font-medium text-slate-400">Sin mensajes todavía</p>
+                    <p className="text-[11px] text-slate-500 mt-0.5">
+                      Envía un mensaje para comunicarte por escrito durante la videoconsulta.
+                    </p>
+                  </div>
+                ) : (
+                  mensajesChat.map((msg, idx) => {
+                    const esMio = msg.senderSocketId === socketRef.current?.id;
+                    return (
+                      <div
+                        key={msg.id || idx}
+                        className={`flex flex-col ${esMio ? 'items-end' : 'items-start'}`}
+                      >
+                        <div className="flex items-center gap-1.5 mb-0.5 px-1">
+                          <span className="text-[10px] font-semibold text-slate-400">
+                            {esMio ? 'Tú' : msg.autor}
+                          </span>
+                          <span className="text-[9px] text-slate-500">{msg.hora}</span>
+                        </div>
+                        <div
+                          className={`max-w-[82%] px-3 py-2 rounded-2xl text-xs leading-relaxed break-words ${
+                            esMio
+                              ? 'bg-teal-600 text-white rounded-br-xs shadow-xs'
+                              : 'bg-slate-800 text-slate-100 border border-slate-700 rounded-bl-xs'
+                          }`}
+                        >
+                          {msg.texto}
+                        </div>
+                      </div>
+                    );
+                  })
+                )}
+                <div ref={chatFinRef} />
+              </div>
+
+              <form
+                onSubmit={handleEnviarMensajeChat}
+                className="p-2.5 bg-slate-800/80 border-t border-slate-700 flex items-center gap-2"
+              >
+                <input
+                  type="text"
+                  value={textoMensajeChat}
+                  onChange={(e) => setTextoMensajeChat(e.target.value)}
+                  placeholder="Escribe un mensaje..."
+                  className="flex-1 bg-slate-900 border border-slate-700 rounded-xl px-3 py-2 text-xs text-white placeholder-slate-500 focus:outline-none focus:border-teal-500"
+                />
+                <button
+                  type="submit"
+                  disabled={!textoMensajeChat.trim()}
+                  className="p-2 bg-teal-600 hover:bg-teal-500 disabled:opacity-40 text-white rounded-xl transition-colors cursor-pointer"
+                  title="Enviar mensaje"
+                >
+                  <Send className="w-4 h-4" />
+                </button>
+              </form>
             </div>
           )}
 
@@ -777,7 +1355,7 @@ export default function Videollamada() {
           </div>
         </div>
 
-        {/* Controles Inferiores (Tarea 5.5.2) */}
+        {/* Controles Inferiores (Tarea 5.5.2 y Tarea 8.2.2) */}
         <div className="h-24 bg-slate-900 flex items-center justify-center gap-6 px-6 absolute bottom-0 w-full border-t border-slate-800 z-30">
           {/* Botón Silenciar / Activar Micrófono */}
           <button 
@@ -809,7 +1387,7 @@ export default function Videollamada() {
             {camaraActiva ? <Video className="w-6 h-6" /> : <VideoOff className="w-6 h-6" />}
           </button>
 
-          {/* Botón Compartir Pantalla (Tarea 5.5.3) */}
+          {/* Botón Compartir Pantalla (Tarea 5.5.3 y Tarea 8.2.2) */}
           <button 
             type="button"
             onClick={toggleCompartirPantalla}
@@ -821,6 +1399,25 @@ export default function Videollamada() {
             }`}
           >
             {compartiendoPantalla ? <MonitorOff className="w-6 h-6" /> : <MonitorUp className="w-6 h-6" />}
+          </button>
+
+          {/* Botón Chat Clínico en Vivo (Tarea 8.2.2) */}
+          <button
+            type="button"
+            onClick={togglePanelChat}
+            title={mostrarChat ? "Cerrar chat de la sala" : "Abrir chat de la sala"}
+            className={`p-4 rounded-full transition-all border relative cursor-pointer ${
+              mostrarChat
+                ? 'bg-teal-600 hover:bg-teal-700 text-white border-teal-500 shadow-lg shadow-teal-600/30'
+                : 'bg-slate-800 hover:bg-slate-700 text-white border-slate-700 hover:border-slate-500'
+            }`}
+          >
+            <MessageSquare className="w-6 h-6" />
+            {mensajesNoLeidos > 0 && (
+              <span className="absolute -top-1 -right-1 min-w-5 h-5 px-1 bg-rose-500 text-white text-[10px] font-bold rounded-full flex items-center justify-center border-2 border-slate-900 animate-bounce">
+                {mensajesNoLeidos}
+              </span>
+            )}
           </button>
 
           {/* Botón Colgar (Tarea 5.5.5) */}

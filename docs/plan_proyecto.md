@@ -159,17 +159,17 @@ Objetivo: Lograr que el Médico y el Paciente conectados desde distintos navegad
 ### Módulo 8.1: Señalización en Tiempo Real en el Servidor (Socket.io / WebRTC)
 *Rama de Git asignada:* `feature/videollamada-realtime`
 
-- [ ] **8.1.1 Integración de Socket.io en el Servidor Backend:** Instalar `socket.io` en `backend/` e integrarlo sobre el servidor HTTP de `backend/src/server.js`, manteniendo intactas todas las rutas Express actuales.
+- [x] **8.1.1 Integración de Socket.io en el Servidor Backend:** Instalar `socket.io` en `backend/` e integrarlo sobre el servidor HTTP de `backend/src/server.js`, manteniendo intactas todas las rutas Express actuales.
   - *Prueba de verificación:* Iniciar `npm run dev` en `backend/` y verificar que el servidor arranca en el puerto `4000` indicando que el servidor HTTP + WebSockets está activo.
-- [ ] **8.1.2 Eventos de Sala Virtual (Unirse, Oferta/Respuesta WebRTC, Candidatos ICE y Chat):** Crear el manejador `backend/src/socket/videollamadaSocket.js` que gestione cuando el Médico y el Paciente entran a la misma sala (`roomId`), reenvíe las señales WebRTC (`offer`, `answer`, `ice-candidate`), avise cuando el otro participante apaga su cámara/micrófono y transmita mensajes de chat clínico en vivo.
+- [x] **8.1.2 Eventos de Sala Virtual (Unirse, Oferta/Respuesta WebRTC, Candidatos ICE y Chat):** Crear el manejador `backend/src/socket/videollamadaSocket.js` que gestione cuando el Médico y el Paciente entran a la misma sala (`roomId`), reenvíe las señales WebRTC (`offer`, `answer`, `ice-candidate`), avise cuando el otro participante apaga su cámara/micrófono y transmita mensajes de chat clínico en vivo.
   - *Prueba de verificación:* Verificar en los logs de la terminal del backend que al abrir la sala `/sala/:id` se registra `[Socket] Usuario conectado a la sala`.
 
 ### Módulo 8.2: Conexión de Video/Audio Remoto y Chat Clínico en Frontend
 *Rama de Git asignada:* `feature/videollamada-realtime`
 
-- [ ] **8.2.1 Conexión P2P de Video y Audio Remoto en `Videollamada.jsx`:** Instalar `socket.io-client` en `frontend/` y agregar el elemento `<video ref={remoteVideoRef}>` y la conexión `RTCPeerConnection` (con servidores STUN públicos gratuitos de Google/Cloudflare) en `frontend/src/pages/Videollamada.jsx`, de modo que cuando el segundo participante entra a la sala, el texto *"Esperando conexión de cámara remota..."* sea reemplazado automáticamente por el video y audio en vivo de la otra persona.
+- [x] **8.2.1 Conexión P2P de Video y Audio Remoto en `Videollamada.jsx`:** Instalar `socket.io-client` en `frontend/` y agregar el elemento `<video ref={remoteVideoRef}>` y la conexión `RTCPeerConnection` (con servidores STUN públicos gratuitos de Google/Cloudflare) en `frontend/src/pages/Videollamada.jsx`, de modo que cuando el segundo participante entra a la sala, el texto *"Esperando conexión de cámara remota..."* sea reemplazado automáticamente por el video y audio en vivo de la otra persona.
   - *Prueba de verificación:* Abrir una ventana normal con el Médico y una ventana de incógnito (o segundo navegador) con el Paciente en la misma cita, entrar ambos a la sala y comprobar que ambos se ven y se escuchan en el recuadro principal.
-- [ ] **8.2.2 Sincronización de Compartir Pantalla y Chat en Vivo dentro de la Sala:** Hacer que al pulsar el botón `"Compartir pantalla"` la pista de video enviada al otro participante cambie en vivo a la pantalla compartida (`replaceTrack`), y añadir una pestaña/botón de **Chat en Vivo** en la sala para enviar mensajes rápidos durante la videollamada.
+- [x] **8.2.2 Sincronización de Compartir Pantalla y Chat en Vivo dentro de la Sala:** Hacer que al pulsar el botón `"Compartir pantalla"` la pista de video enviada al otro participante cambie en vivo a la pantalla compartida (`replaceTrack`), y añadir una pestaña/botón de **Chat en Vivo** en la sala para enviar mensajes rápidos durante la videollamada.
   - *Prueba de verificación:* Desde la ventana del Médico compartir pantalla y enviar un mensaje en el chat de la sala; verificar en la ventana del Paciente que se ve la pantalla del médico y llega el mensaje instantáneamente.
 
 ---
