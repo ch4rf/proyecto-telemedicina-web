@@ -12,6 +12,9 @@ import ModalAgendarCita from '../components/ModalAgendarCita';
 import ModalDetalleCita from '../components/ModalDetalleCita';
 import ErrorBoundary from '../components/ErrorBoundary';
 import { generarRecetaPDF } from '../utils/generarRecetaPDF';
+import { io } from 'socket.io-client';
+
+const SOCKET_SERVER_URL = (import.meta.env.VITE_API_URL || 'http://localhost:4000/api').replace(/\/api\/?$/, '');
 
 export default function Dashboard() {
   const navigate = useNavigate();
@@ -32,6 +35,7 @@ export default function Dashboard() {
   const [cargandoNotificaciones, setCargandoNotificaciones] = useState(false);
   const [notificacionesAbiertas, setNotificacionesAbiertas] = useState(false);
   const notificacionesRef = useRef(null);
+  const [presenciaSalas, setPresenciaSalas] = useState({});
 
   // Carga inicial de notificaciones desde el backend
   const cargarNotificaciones = async () => {
@@ -57,6 +61,34 @@ export default function Dashboard() {
     window.addEventListener('notificaciones-actualizadas', handleRefrescarNotif);
     return () => window.removeEventListener('notificaciones-actualizadas', handleRefrescarNotif);
   }, []);
+
+  // Conexión Socket.io en el Dashboard para recibir presencia de salas y notificaciones en vivo
+  useEffect(() => {
+    if (!usuario?.id_usuario) return;
+    const socket = io(SOCKET_SERVER_URL, {
+      transports: ['websocket', 'polling']
+    });
+
+    socket.on('connect', () => {
+      socket.emit('consultar-presencia-salas');
+    });
+
+    socket.on('presencia-salas-actualizada', (mapaPresencia) => {
+      setPresenciaSalas(mapaPresencia || {});
+    });
+
+    socket.on('notificacion-tiempo-real', (payload) => {
+      if (!payload?.id_usuario_destino || String(payload.id_usuario_destino) === String(usuario.id_usuario)) {
+        cargarNotificaciones();
+      }
+    });
+
+    return () => {
+      try {
+        socket.disconnect();
+      } catch {}
+    };
+  }, [usuario?.id_usuario]);
 
   // Marcar notificación individual como leída
   const handleMarcarLeida = async (id_notificacion, e) => {
@@ -1031,10 +1063,41 @@ export default function Dashboard() {
                         <p className="text-xs text-teal-600 font-medium mt-0.5">
                           {isPatient ? (proximaCita.especialidad || 'Consulta Médica General') : 'Consulta Virtual de Telemedicina'}
                         </p>
-                        <p className="text-xs text-slate-400 mt-1 flex items-center gap-1">
-                          <Clock className="w-3.5 h-3.5" />
-                          <span>Sala Virtual Segura con Cifrado Punto a Punto</span>
-                        </p>
+                        <div className="mt-1">
+                          {(() => {
+                            const infoSala = presenciaSalas[proximaCita.url_videollamada] || presenciaSalas[proximaCita.id_cita];
+                            if (infoSala?.medicoPresente && infoSala?.pacientePresente) {
+                              return (
+                                <p className="text-xs text-emerald-600 font-semibold flex items-center gap-1.5">
+                                  <span className="w-2 h-2 rounded-full bg-emerald-500 animate-pulse"></span>
+                                  <span>Videoconsulta en curso (Médico y Paciente en sala)</span>
+                                </p>
+                              );
+                            }
+                            if (infoSala?.pacientePresente && !infoSala?.medicoPresente) {
+                              return (
+                                <p className="text-xs text-emerald-600 font-semibold flex items-center gap-1.5">
+                                  <span className="w-2 h-2 rounded-full bg-emerald-500 animate-pulse"></span>
+                                  <span>Paciente ya en cita esperando al doctor</span>
+                                </p>
+                              );
+                            }
+                            if (infoSala?.medicoPresente && !infoSala?.pacientePresente) {
+                              return (
+                                <p className="text-xs text-emerald-600 font-semibold flex items-center gap-1.5">
+                                  <span className="w-2 h-2 rounded-full bg-emerald-500 animate-pulse"></span>
+                                  <span>Doctor ya en cita esperando al paciente</span>
+                                </p>
+                              );
+                            }
+                            return (
+                              <p className="text-xs text-slate-400 flex items-center gap-1">
+                                <Clock className="w-3.5 h-3.5" />
+                                <span>Sala Virtual Segura con Cifrado Punto a Punto</span>
+                              </p>
+                            );
+                          })()}
+                        </div>
                       </div>
                     </div>
 
