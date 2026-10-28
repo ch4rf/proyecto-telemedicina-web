@@ -1,11 +1,25 @@
 require('dotenv').config();
+const http = require('http');
 const express = require('express');
 const cors = require('cors');
 const helmet = require('helmet');
+const { Server } = require('socket.io');
+const configurarVideollamadaSocket = require('./socket/videollamadaSocket');
 const pool = require('./config/db');
 
 const app = express();
+const server = http.createServer(app);
 const PORT = process.env.PORT || 4000;
+
+// Configuración de Socket.io para señalización WebRTC y sala de videollamada (Tarea 8.1.1)
+const io = new Server(server, {
+  cors: {
+    origin: '*',
+    methods: ['GET', 'POST']
+  }
+});
+app.set('io', io);
+configurarVideollamadaSocket(io);
 
 app.use(helmet()); 
 app.use(cors()); 
@@ -55,7 +69,7 @@ app.get('/api/health', async (req, res) => {
   }
 });
 
-// Arrancar servidor
-app.listen(PORT, () => {
-  console.log(`Servidor corriendo en http://localhost:${PORT}`);
+// Arrancar servidor HTTP + WebSockets
+server.listen(PORT, () => {
+  console.log(`Servidor HTTP y WebSockets (Socket.io) corriendo en http://localhost:${PORT}`);
 });

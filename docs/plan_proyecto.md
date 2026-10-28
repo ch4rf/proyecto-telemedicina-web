@@ -159,9 +159,9 @@ Objetivo: Lograr que el Médico y el Paciente conectados desde distintos navegad
 ### Módulo 8.1: Señalización en Tiempo Real en el Servidor (Socket.io / WebRTC)
 *Rama de Git asignada:* `feature/videollamada-realtime`
 
-- [ ] **8.1.1 Integración de Socket.io en el Servidor Backend:** Instalar `socket.io` en `backend/` e integrarlo sobre el servidor HTTP de `backend/src/server.js`, manteniendo intactas todas las rutas Express actuales.
+- [x] **8.1.1 Integración de Socket.io en el Servidor Backend:** Instalar `socket.io` en `backend/` e integrarlo sobre el servidor HTTP de `backend/src/server.js`, manteniendo intactas todas las rutas Express actuales.
   - *Prueba de verificación:* Iniciar `npm run dev` en `backend/` y verificar que el servidor arranca en el puerto `4000` indicando que el servidor HTTP + WebSockets está activo.
-- [ ] **8.1.2 Eventos de Sala Virtual (Unirse, Oferta/Respuesta WebRTC, Candidatos ICE y Chat):** Crear el manejador `backend/src/socket/videollamadaSocket.js` que gestione cuando el Médico y el Paciente entran a la misma sala (`roomId`), reenvíe las señales WebRTC (`offer`, `answer`, `ice-candidate`), avise cuando el otro participante apaga su cámara/micrófono y transmita mensajes de chat clínico en vivo.
+- [x] **8.1.2 Eventos de Sala Virtual (Unirse, Oferta/Respuesta WebRTC, Candidatos ICE y Chat):** Crear el manejador `backend/src/socket/videollamadaSocket.js` que gestione cuando el Médico y el Paciente entran a la misma sala (`roomId`), reenvíe las señales WebRTC (`offer`, `answer`, `ice-candidate`), avise cuando el otro participante apaga su cámara/micrófono y transmita mensajes de chat clínico en vivo.
   - *Prueba de verificación:* Verificar en los logs de la terminal del backend que al abrir la sala `/sala/:id` se registra `[Socket] Usuario conectado a la sala`.
 
 ### Módulo 8.2: Conexión de Video/Audio Remoto y Chat Clínico en Frontend
