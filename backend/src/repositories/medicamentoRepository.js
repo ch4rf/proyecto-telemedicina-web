@@ -151,7 +151,7 @@ class MedicamentoRepository {
             FROM catalogo_medicamentos
             WHERE nombre_comercial ILIKE $1 OR principio_activo ILIKE $1
             ORDER BY nombre_comercial ASC
-            LIMIT 15;
+            LIMIT 50;
         `;
         const { rows } = await pool.query(query, [filtro]);
         return rows;
@@ -168,6 +168,9 @@ class MedicamentoRepository {
             ON CONFLICT (nombre_comercial) DO UPDATE SET
                 principio_activo = EXCLUDED.principio_activo,
                 presentacion = EXCLUDED.presentacion,
+                dosis_recomendada = EXCLUDED.dosis_recomendada,
+                frecuencia_recomendada = EXCLUDED.frecuencia_recomendada,
+                duracion_recomendada = EXCLUDED.duracion_recomendada,
                 fuente = EXCLUDED.fuente
             RETURNING id_medicamento, nombre_comercial, principio_activo, presentacion,
                       dosis_recomendada, frecuencia_recomendada, duracion_recomendada, fuente;
@@ -182,6 +185,16 @@ class MedicamentoRepository {
             med.fuente || 'OpenFDA API'
         ]);
         return rows[0];
+    }
+
+    async eliminarPorId(id_medicamento) {
+        const query = `
+            DELETE FROM catalogo_medicamentos
+            WHERE id_medicamento = $1
+            RETURNING id_medicamento, nombre_comercial;
+        `;
+        const { rows } = await pool.query(query, [id_medicamento]);
+        return rows[0] || null;
     }
 }
 

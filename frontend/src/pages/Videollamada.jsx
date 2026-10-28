@@ -275,8 +275,9 @@ export default function Videollamada() {
           // Si entró directo a /sala sin :id, busca su cita activa
           const resCitas = await api.get('/citas');
           const lista = Array.isArray(resCitas) ? resCitas : (resCitas?.data || []);
-          if (lista.length > 0) {
-            const resDetalle = await api.get(`/citas/${lista[0].id_cita}`);
+          const citaActiva = lista.find(c => c.estado === 'PROGRAMADA');
+          if (citaActiva) {
+            const resDetalle = await api.get(`/citas/${citaActiva.id_cita}`);
             const data = resDetalle?.data || resDetalle;
             if (!cancelado && data) {
               setCita(data);
@@ -334,6 +335,13 @@ export default function Videollamada() {
       cancelado = true;
     };
   }, [cita?.id_paciente]);
+
+  // Si la cita está CANCELADA, liberar cámara/micrófono de inmediato
+  useEffect(() => {
+    if (cita?.estado === 'CANCELADA') {
+      liberarTodosLosDispositivos();
+    }
+  }, [cita?.estado]);
 
   // Tarea 5.5.6: Persistencia de notas clínicas y diagnóstico en BD
   const handleGuardarNotas = async () => {
@@ -613,6 +621,33 @@ export default function Videollamada() {
 
   return (
     <div className="flex h-screen bg-slate-900 font-sans overflow-hidden">
+      {cita?.estado === 'CANCELADA' && (
+        <div className="fixed inset-0 z-50 bg-slate-950/90 backdrop-blur-sm flex items-center justify-center p-4">
+          <div className="max-w-md w-full bg-white rounded-3xl shadow-2xl border border-slate-100 p-6 text-center space-y-4">
+            <div className="w-12 h-12 rounded-2xl bg-rose-50 text-rose-600 flex items-center justify-center mx-auto border border-rose-100">
+              <AlertCircle className="w-6 h-6" />
+            </div>
+            <h3 className="text-lg font-bold text-slate-900">Sala Virtual Cerrada (Cita Cancelada)</h3>
+            <p className="text-xs text-slate-600 leading-relaxed">
+              {cita.cancelado_por === 'MEDICO'
+                ? 'Esta cita médica fue cancelada por el médico especialista. La sala de videoconsulta ya no se encuentra disponible.'
+                : cita.cancelado_por === 'PACIENTE'
+                ? 'Esta cita médica fue cancelada por el paciente. La sala de videoconsulta ya no se encuentra disponible.'
+                : 'Esta cita médica fue cancelada y la sala de videoconsulta ya no se encuentra disponible.'}
+            </p>
+            <button
+              type="button"
+              onClick={() => {
+                liberarTodosLosDispositivos();
+                navigate('/dashboard', { replace: true });
+              }}
+              className="w-full py-2.5 bg-teal-600 hover:bg-teal-700 text-white font-semibold text-xs rounded-xl shadow-md transition-all cursor-pointer"
+            >
+              Volver al Panel Principal
+            </button>
+          </div>
+        </div>
+      )}
       {/* Panel Izquierdo - Video (60%) */}
       <div className="flex-1 flex flex-col relative">
         {/* Header Video */}
