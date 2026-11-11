@@ -1,4 +1,20 @@
-const API_BASE_URL = 'http://localhost:4000/api';
+/**
+ * URL base de la API y del servidor Socket.io (Tarea 9.1.1):
+ * - Si se define VITE_API_URL (ej. en Azure o contenedor de producción), la utiliza directamente.
+ * - Si se abre desde otra PC / celular vía VS Code Port Forwarding o red local, usa '/api' y el origen actual (vía Proxy de Vite).
+ * - Si se abre en localhost en desarrollo tradicional, usa 'http://localhost:4000/api'.
+ */
+const esAccesoRemoto = typeof window !== 'undefined' &&
+  window.location.hostname !== 'localhost' &&
+  window.location.hostname !== '127.0.0.1';
+
+export const API_BASE_URL = import.meta.env.VITE_API_URL || (
+  esAccesoRemoto ? '/api' : 'http://localhost:4000/api'
+);
+
+export const SOCKET_SERVER_URL = import.meta.env.VITE_API_URL
+  ? import.meta.env.VITE_API_URL.replace(/\/api\/?$/, '')
+  : (esAccesoRemoto ? window.location.origin : 'http://localhost:4000');
 
 /**
  * Obtiene el token JWT almacenado en localStorage o sessionStorage.

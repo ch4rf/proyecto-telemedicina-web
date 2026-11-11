@@ -5,6 +5,100 @@ import {
 } from 'lucide-react';
 import { api } from '../services/api';
 
+const DIAS_SEMANA = ['Domingo', 'Lunes', 'Martes', 'Miércoles', 'Jueves', 'Viernes', 'Sábado'];
+const DIAS_CORTOS = ['Dom', 'Lun', 'Mar', 'Mié', 'Jue', 'Vie', 'Sáb'];
+
+const formatearFechaLocal = (dateObj) => {
+  const anio = dateObj.getFullYear();
+  const mes = String(dateObj.getMonth() + 1).padStart(2, '0');
+  const dia = String(dateObj.getDate()).padStart(2, '0');
+  return `${anio}-${mes}-${dia}`;
+};
+
+const normalizarTextoDia = (texto = '') =>
+  String(texto)
+    .trim()
+    .toLowerCase()
+    .normalize('NFD')
+    .replace(/[\u0300-\u036f]/g, '');
+
+const obtenerDisponibilidadNormalizada = (med) => {
+  if (!med?.disponibilidad) return [];
+  let disp = med.disponibilidad;
+  if (typeof disp === 'string') {
+    try {
+      disp = JSON.parse(disp);
+    } catch {
+      return [];
+    }
+  }
+  return Array.isArray(disp) ? disp : [];
+};
+
+const generarProximasFechasDisponibles = (disponibilidad = [], cantidad = 5) => {
+  const hoy = new Date();
+  hoy.setHours(0, 0, 0, 0);
+
+  const diasPermitidos = new Set(
+    disponibilidad
+      .map(d => normalizarTextoDia(d.dia))
+      .filter(Boolean)
+  );
+
+  const resultados = [];
+  for (let offset = 0; offset < 35 && resultados.length < cantidad; offset++) {
+    const candidato = new Date(hoy);
+    candidato.setDate(hoy.getDate() + offset);
+    const nombreDia = DIAS_SEMANA[candidato.getDay()];
+    const diaNormalizado = normalizarTextoDia(nombreDia);
+
+    if (diasPermitidos.size === 0 || diasPermitidos.has(diaNormalizado)) {
+      const fechaISO = formatearFechaLocal(candidato);
+      const etiquetaDia = DIAS_CORTOS[candidato.getDay()];
+      const diaMes = candidato.toLocaleDateString('es-ES', { day: 'numeric', month: 'short' });
+      resultados.push({
+        fechaISO,
+        nombreDia,
+        etiqueta: offset === 0
+          ? `${etiquetaDia} ${diaMes} (Hoy)`
+          : offset === 1
+          ? `${etiquetaDia} ${diaMes} (Mañana)`
+          : `${etiquetaDia} ${diaMes}`
+      });
+    }
+  }
+
+  return resultados;
+};
+
+const generarHorariosPorRango = (horaInicio = '08:00', horaFin = '17:00') => {
+  const aMinutos = (hhmm) => {
+    const [h, m] = String(hhmm || '08:00').split(':').map(Number);
+    return (isNaN(h) ? 8 : h) * 60 + (isNaN(m) ? 0 : m);
+  };
+  const aHHMM = (mins) => {
+    const h = Math.floor(mins / 60);
+    const m = mins % 60;
+    return `${String(h).padStart(2, '0')}:${String(m).padStart(2, '0')}`;
+  };
+
+  const inicioMin = aMinutos(horaInicio);
+  const finMin = aMinutos(horaFin);
+  if (finMin <= inicioMin) {
+    return ['08:30', '09:30', '10:30', '11:30', '14:00', '15:00', '16:00', '17:00'];
+  }
+
+  const duracionTotal = finMin - inicioMin;
+  const paso = duracionTotal <= 240 ? 30 : 60;
+  const slots = [];
+
+  for (let t = inicioMin; t <= finMin && slots.length < 8; t += paso) {
+    slots.push(aHHMM(t));
+  }
+
+  return slots.length > 0 ? slots : [horaInicio];
+};
+
 export default function ModalAgendarCita({ 
   isOpen, 
   onClose, 
@@ -14,8 +108,8 @@ export default function ModalAgendarCita({
 }) {
   const isPatient = usuario?.rol === 'PACIENTE';
 
-  // Fecha de hoy en formato YYYY-MM-DD
-  const hoyStr = new Date().toISOString().split('T')[0];
+  // Fecha de hoy en formato YYYY-MM-DD local
+  const hoyStr = formatearFechaLocal(new Date());
 
   // Estados del Formulario
   const [medicos, setMedicos] = useState([]);
@@ -31,12 +125,6 @@ export default function ModalAgendarCita({
   const [guardando, setGuardando] = useState(false);
   const [mensajeError, setMensajeError] = useState('');
   const [mensajeExito, setMensajeExito] = useState('');
-
-  // Horarios sugeridos
-  const horariosSugeridos = [
-    '08:30', '09:30', '10:30', '11:30',
-    '14:00', '15:00', '16:00', '17:00'
-  ];
 
   // Carga de médicos o pacientes según el rol al abrir el modal
   useEffect(() => {
@@ -56,20 +144,46 @@ export default function ModalAgendarCita({
           const lista = Array.isArray(resMedicos) ? resMedicos : (resMedicos?.data || []);
           setMedicos(lista);
 
-          // Si hay médico preseleccionado (por ejemplo desde el Directorio Médico)
-          if (medicoPreseleccionado?.id_medico) {
-            setMedicoSeleccionado(medicoPreseleccionado.id_medico);
-          } else if (lista.length > 0) {
-            setMedicoSeleccionado(lista[0].id_medico);
+          const medInicial = (medicoPreseleccionado?.id_medico && lista.find(m => m.id_medico === medicoPreseleccionado.id_medico))
+            || lista[0]
+            || null;
+
+          if (medInicial) {
+            setMedicoSeleccionado(medInicial.id_medico);
+            const disp = obtenerDisponibilidadNormalizada(medInicial);
+            const fechasSugeridas = generarProximasFechasDisponibles(disp, 5);
+            const fechaInicial = fechasSugeridas[0]?.fechaISO || hoyStr;
+            setFecha(fechaInicial);
+
+            const hIni = disp[0]?.hora_inicio || '08:00';
+            const hFin = disp[0]?.hora_fin || '17:00';
+            const slotsIniciales = generarHorariosPorRango(hIni, hFin);
+            setHora(slotsIniciales[0] || hIni);
           }
         } else {
-          // Si el usuario es médico, carga lista de pacientes para agendarles cita
-          const resPacientes = await api.get('/pacientes');
-          const lista = Array.isArray(resPacientes) ? resPacientes : (resPacientes?.data || []);
-          setPacientes(lista);
-          if (lista.length > 0) {
-            setPacienteSeleccionado(lista[0].id_paciente);
+          // Si el usuario es médico, carga lista de pacientes para agendarles cita y también su propio horario
+          const [resPacientes, resMedicos] = await Promise.all([
+            api.get('/pacientes'),
+            api.get('/medicos')
+          ]);
+          const listaPacientes = Array.isArray(resPacientes) ? resPacientes : (resPacientes?.data || []);
+          const listaMedicos = Array.isArray(resMedicos) ? resMedicos : (resMedicos?.data || []);
+          setPacientes(listaPacientes);
+          setMedicos(listaMedicos);
+
+          if (listaPacientes.length > 0) {
+            setPacienteSeleccionado(listaPacientes[0].id_paciente);
           }
+
+          const miPerfilMedico = listaMedicos.find(m => m.id_medico === usuario?.id_usuario) || null;
+          const disp = obtenerDisponibilidadNormalizada(miPerfilMedico);
+          const fechasSugeridas = generarProximasFechasDisponibles(disp, 5);
+          setFecha(fechasSugeridas[0]?.fechaISO || hoyStr);
+
+          const hIni = disp[0]?.hora_inicio || '08:00';
+          const hFin = disp[0]?.hora_fin || '17:00';
+          const slotsIniciales = generarHorariosPorRango(hIni, hFin);
+          setHora(slotsIniciales[0] || hIni);
         }
       } catch (err) {
         console.error('Error al cargar datos en modal de cita:', err.message);
@@ -80,37 +194,63 @@ export default function ModalAgendarCita({
     };
 
     cargarDatos();
-
-    // Establecer fecha por defecto: mañana
-    const manana = new Date();
-    manana.setDate(manana.getDate() + 1);
-    setFecha(manana.toISOString().split('T')[0]);
-    setHora('10:30');
     setMotivo('');
-  }, [isOpen, medicoPreseleccionado, isPatient]);
+  }, [isOpen, medicoPreseleccionado, isPatient, usuario?.id_usuario, hoyStr]);
 
   if (!isOpen) return null;
 
-  // Acceso a datos del médico seleccionado
-  const medicoActivo = medicos.find(m => m.id_medico === medicoSeleccionado);
+  // Acceso a datos del médico seleccionado (o del médico en sesión si agenda él mismo)
+  const medicoActivo = isPatient
+    ? medicos.find(m => m.id_medico === medicoSeleccionado)
+    : medicos.find(m => m.id_medico === usuario?.id_usuario);
   const pacienteActivo = pacientes.find(p => p.id_paciente === pacienteSeleccionado);
 
   // Obtener lista normalizada de disponibilidad del médico activo (Tarea 6.2.3)
-  const obtenerDisponibilidadMedico = (med) => {
-    if (!med?.disponibilidad) return [];
-    let disp = med.disponibilidad;
-    if (typeof disp === 'string') {
-      try { disp = JSON.parse(disp); } catch { return []; }
-    }
-    return Array.isArray(disp) ? disp : [];
-  };
-  const disponibilidadActiva = obtenerDisponibilidadMedico(medicoActivo);
+  const disponibilidadActiva = obtenerDisponibilidadNormalizada(medicoActivo);
 
-  // Atajos rápidos para la fecha
-  const aplicarAtajoFecha = (diasAdicionales) => {
-    const targetDate = new Date();
-    targetDate.setDate(targetDate.getDate() + diasAdicionales);
-    setFecha(targetDate.toISOString().split('T')[0]);
+  // Días y horas sugeridas reales basadas en la configuración del médico
+  const proximasFechasMedico = generarProximasFechasDisponibles(disponibilidadActiva, 5);
+
+  const diaSemanaSeleccionado = fecha
+    ? DIAS_SEMANA[new Date(`${fecha}T12:00:00`).getDay()]
+    : '';
+
+  const bloqueDiaSeleccionado = disponibilidadActiva.find(
+    d => normalizarTextoDia(d.dia) === normalizarTextoDia(diaSemanaSeleccionado)
+  );
+
+  const horaInicioRango = bloqueDiaSeleccionado?.hora_inicio || disponibilidadActiva[0]?.hora_inicio || '08:00';
+  const horaFinRango = bloqueDiaSeleccionado?.hora_fin || disponibilidadActiva[0]?.hora_fin || '17:00';
+  const horariosSugeridos = generarHorariosPorRango(horaInicioRango, horaFinRango);
+
+  // Validación reactiva en tiempo real si el usuario elige manualmente un día o una hora fuera del horario del médico
+  const diaFueraDeHorario = Boolean(
+    fecha &&
+    disponibilidadActiva.length > 0 &&
+    !bloqueDiaSeleccionado
+  );
+
+  const horaFueraDeRango = Boolean(
+    hora &&
+    disponibilidadActiva.length > 0 &&
+    (hora < horaInicioRango || hora > horaFinRango)
+  );
+
+  const handleCambioMedico = (nuevoIdMedico) => {
+    setMedicoSeleccionado(nuevoIdMedico);
+    setMensajeError('');
+    const nuevoMed = medicos.find(m => m.id_medico === nuevoIdMedico);
+    const disp = obtenerDisponibilidadNormalizada(nuevoMed);
+    const nuevasFechas = generarProximasFechasDisponibles(disp, 5);
+    if (nuevasFechas.length > 0) {
+      setFecha(nuevasFechas[0].fechaISO);
+    }
+    const hIni = disp[0]?.hora_inicio || '08:00';
+    const hFin = disp[0]?.hora_fin || '17:00';
+    const nuevosSlots = generarHorariosPorRango(hIni, hFin);
+    if (nuevosSlots.length > 0) {
+      setHora(nuevosSlots[0]);
+    }
   };
 
   // Envío del Formulario
@@ -148,14 +288,13 @@ export default function ModalAgendarCita({
     }
 
     // Validación RN-01: Verificar disponibilidad configurada por el médico (Tarea 6.2.3)
-    if (isPatient && disponibilidadActiva.length > 0) {
-      const nombresDias = ['Domingo', 'Lunes', 'Martes', 'Miércoles', 'Jueves', 'Viernes', 'Sábado'];
-      const diaElegido = nombresDias[fechaHoraCita.getDay()];
+    if (disponibilidadActiva.length > 0) {
+      const diaElegido = DIAS_SEMANA[fechaHoraCita.getDay()];
       const bloqueDia = disponibilidadActiva.find(
-        d => d.dia && d.dia.toLowerCase() === diaElegido.toLowerCase()
+        d => normalizarTextoDia(d.dia) === normalizarTextoDia(diaElegido)
       );
       const diasTexto = disponibilidadActiva.map(d => d.dia).join(', ');
-      const rangoTexto = `${disponibilidadActiva[0].hora_inicio || '08:00'} a ${disponibilidadActiva[0].hora_fin || '17:00'}`;
+      const rangoTexto = `${horaInicioRango} a ${horaFinRango}`;
 
       if (!bloqueDia) {
         setMensajeError(`Horario no disponible (RN-01): El especialista atiende los días ${diasTexto} (${rangoTexto} hrs). Seleccionaste ${diaElegido}.`);
@@ -164,13 +303,10 @@ export default function ModalAgendarCita({
 
       if (bloqueDia.hora_inicio && bloqueDia.hora_fin) {
         if (hora < bloqueDia.hora_inicio || hora > bloqueDia.hora_fin) {
-          setMensajeError(`Horario fuera de rango (RN-01): El especialista atiende los ${diaElegido} de ${bloqueDia.hora_inicio} a ${bloqueDia.hora_fin} hrs.`);
+          setMensajeError(`Horario fuera de rango (RN-01): El especialista atiende de ${bloqueDia.hora_inicio} a ${bloqueDia.hora_fin} hrs.`);
           return;
         }
       }
-    }
-    if (false) {
-      return;
     }
 
     try {
@@ -263,7 +399,7 @@ export default function ModalAgendarCita({
                   <div className="relative">
                     <select
                       value={medicoSeleccionado}
-                      onChange={(e) => setMedicoSeleccionado(e.target.value)}
+                      onChange={(e) => handleCambioMedico(e.target.value)}
                       required
                       className="w-full px-4 py-3 bg-slate-50 border border-slate-200 rounded-xl text-sm font-medium text-slate-800 focus:bg-white focus:outline-none focus:ring-2 focus:ring-teal-500/20 focus:border-teal-500 transition-all appearance-none cursor-pointer"
                     >
@@ -344,64 +480,79 @@ export default function ModalAgendarCita({
                 </div>
               )}
 
-              {/* Selector de Fecha y Atajos */}
+              {/* Selector de Fecha y Días de Atención del Médico */}
               <div>
                 <div className="flex items-center justify-between mb-2">
                   <label className="text-xs font-bold text-slate-700 uppercase tracking-wider">
                     Fecha de la Consulta
                   </label>
-                  <span className="text-[11px] text-slate-400">Mínimo: hoy</span>
+                  <span className="text-[11px] text-slate-400">
+                    {disponibilidadActiva.length > 0
+                      ? `Días: ${disponibilidadActiva.map(d => d.dia).join(', ')}`
+                      : 'Mínimo: hoy'}
+                  </span>
                 </div>
 
                 <input
                   type="date"
                   min={hoyStr}
                   value={fecha}
-                  onChange={(e) => setFecha(e.target.value)}
+                  onChange={(e) => {
+                    setFecha(e.target.value);
+                    setMensajeError('');
+                  }}
                   required
                   className="w-full px-4 py-2.5 bg-slate-50 border border-slate-200 rounded-xl text-sm font-medium text-slate-800 focus:bg-white focus:outline-none focus:ring-2 focus:ring-teal-500/20 focus:border-teal-500 transition-all cursor-pointer"
                 />
 
-                {/* Atajos de Fecha */}
+                {/* Botones rápidos con los próximos días en que realmente atiende el médico */}
                 <div className="flex items-center gap-2 mt-2.5 overflow-x-auto pb-1">
-                  <button
-                    type="button"
-                    onClick={() => aplicarAtajoFecha(0)}
-                    className="px-2.5 py-1 text-[11px] font-semibold bg-slate-100 hover:bg-slate-200 text-slate-700 rounded-lg transition-colors cursor-pointer"
-                  >
-                    Hoy
-                  </button>
-                  <button
-                    type="button"
-                    onClick={() => aplicarAtajoFecha(1)}
-                    className="px-2.5 py-1 text-[11px] font-semibold bg-slate-100 hover:bg-slate-200 text-slate-700 rounded-lg transition-colors cursor-pointer"
-                  >
-                    Mañana
-                  </button>
-                  <button
-                    type="button"
-                    onClick={() => aplicarAtajoFecha(2)}
-                    className="px-2.5 py-1 text-[11px] font-semibold bg-slate-100 hover:bg-slate-200 text-slate-700 rounded-lg transition-colors cursor-pointer"
-                  >
-                    En 2 días
-                  </button>
-                  <button
-                    type="button"
-                    onClick={() => aplicarAtajoFecha(7)}
-                    className="px-2.5 py-1 text-[11px] font-semibold bg-slate-100 hover:bg-slate-200 text-slate-700 rounded-lg transition-colors cursor-pointer"
-                  >
-                    Próxima semana
-                  </button>
+                  {proximasFechasMedico.map((item) => {
+                    const esFechaActiva = fecha === item.fechaISO;
+                    return (
+                      <button
+                        key={item.fechaISO}
+                        type="button"
+                        onClick={() => {
+                          setFecha(item.fechaISO);
+                          setMensajeError('');
+                        }}
+                        className={`px-2.5 py-1 text-[11px] font-semibold rounded-lg transition-colors whitespace-nowrap cursor-pointer border ${
+                          esFechaActiva
+                            ? 'bg-teal-600 text-white border-teal-600 shadow-2xs'
+                            : 'bg-slate-100 hover:bg-slate-200 text-slate-700 border-transparent'
+                        }`}
+                      >
+                        {item.etiqueta}
+                      </button>
+                    );
+                  })}
                 </div>
+
+                {diaFueraDeHorario && (
+                  <p className="mt-2 text-[11px] text-rose-600 font-semibold flex items-center gap-1.5 animate-fadeIn">
+                    <AlertCircle className="w-3.5 h-3.5 shrink-0" />
+                    <span>
+                      Horario no disponible (RN-01): El especialista atiende los días {disponibilidadActiva.map(d => d.dia).join(', ')}. Seleccionaste {diaSemanaSeleccionado}.
+                    </span>
+                  </p>
+                )}
               </div>
 
-              {/* Selector de Hora con Chips y Campo Personalizado */}
+              {/* Selector de Hora con Chips Reales del Médico y Campo Personalizado */}
               <div>
-                <label className="block text-xs font-bold text-slate-700 uppercase tracking-wider mb-2">
-                  Horario de Atención
-                </label>
+                <div className="flex items-center justify-between mb-2">
+                  <label className="block text-xs font-bold text-slate-700 uppercase tracking-wider">
+                    Horario de Atención
+                  </label>
+                  {disponibilidadActiva.length > 0 && (
+                    <span className="text-[11px] text-teal-600 font-semibold">
+                      {horaInicioRango} a {horaFinRango} hrs
+                    </span>
+                  )}
+                </div>
 
-                {/* Chips de Horarios Sugeridos */}
+                {/* Chips de Horarios Disponibles del Médico */}
                 <div className="grid grid-cols-4 gap-2 mb-3">
                   {horariosSugeridos.map((slot) => {
                     const isSelected = hora === slot;
@@ -409,7 +560,10 @@ export default function ModalAgendarCita({
                       <button
                         key={slot}
                         type="button"
-                        onClick={() => setHora(slot)}
+                        onClick={() => {
+                          setHora(slot);
+                          setMensajeError('');
+                        }}
                         className={`py-2 text-xs font-bold rounded-xl border transition-all cursor-pointer ${
                           isSelected
                             ? 'bg-teal-600 text-white border-teal-600 shadow-sm'
@@ -428,11 +582,27 @@ export default function ModalAgendarCita({
                   <input
                     type="time"
                     value={hora}
-                    onChange={(e) => setHora(e.target.value)}
+                    onChange={(e) => {
+                      setHora(e.target.value);
+                      setMensajeError('');
+                    }}
                     required
-                    className="px-3 py-1.5 bg-slate-50 border border-slate-200 rounded-xl text-xs font-semibold text-slate-800 focus:bg-white focus:outline-none focus:ring-2 focus:ring-teal-500/20 focus:border-teal-500 transition-all cursor-pointer"
+                    className={`px-3 py-1.5 bg-slate-50 border rounded-xl text-xs font-semibold text-slate-800 focus:bg-white focus:outline-none focus:ring-2 transition-all cursor-pointer ${
+                      horaFueraDeRango
+                        ? 'border-rose-400 focus:ring-rose-500/20 focus:border-rose-500 text-rose-700'
+                        : 'border-slate-200 focus:ring-teal-500/20 focus:border-teal-500'
+                    }`}
                   />
                 </div>
+
+                {horaFueraDeRango && (
+                  <p className="mt-2 text-[11px] text-rose-600 font-semibold flex items-center gap-1.5 animate-fadeIn">
+                    <AlertCircle className="w-3.5 h-3.5 shrink-0" />
+                    <span>
+                      Horario fuera de rango (RN-01): El especialista atiende de {horaInicioRango} a {horaFinRango} hrs.
+                    </span>
+                  </p>
+                )}
               </div>
 
               {/* Motivo de Consulta Opcional */}

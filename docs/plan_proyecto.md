@@ -180,7 +180,7 @@ Objetivo: Parametrizar las URLs para producción, crear el pipeline automatizado
 ### Módulo 9.1: Parametrización de Entornos y Contenedores Docker
 *Rama de Git asignada:* `feature/ci-cd-azure`
 
-- [ ] **9.1.1 URL Dinámica en Frontend y CORS en Backend:** Modificar `frontend/src/services/api.js` para usar `import.meta.env.VITE_API_URL || 'http://localhost:4000/api'` (y la misma base para el Socket de videollamada), de forma que funcione tanto en `localhost` como en Azure sin tocar código.
+- [x] **9.1.1 URL Dinámica en Frontend y CORS en Backend:** Modificar `frontend/src/services/api.js` para usar `import.meta.env.VITE_API_URL || 'http://localhost:4000/api'` (y la misma base para el Socket de videollamada), de forma que funcione tanto en `localhost` como en Azure sin tocar código.
   - *Prueba de verificación:* Ejecutar `npm run build` en `frontend/` y `npm run dev` en local comprobando que todo sigue conectando a `localhost:4000` por defecto.
 - [ ] **9.1.2 Creación de `Dockerfile` para Backend y Frontend:** Crear `backend/Dockerfile` y `frontend/Dockerfile` optimizados para producción y actualizar `docker-compose.yml` para validar el levantamiento completo.
   - *Prueba de verificación:* Verificar que el build de ambos proyectos finaliza con código `0` sin errores ni dependencias faltantes.

@@ -6,7 +6,7 @@ import {
 } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
-import { api } from '../services/api';
+import { api, SOCKET_SERVER_URL } from '../services/api';
 import ModalPerfil from '../components/ModalPerfil';
 import ModalAgendarCita from '../components/ModalAgendarCita';
 import ModalDetalleCita from '../components/ModalDetalleCita';
@@ -14,7 +14,7 @@ import ErrorBoundary from '../components/ErrorBoundary';
 import { generarRecetaPDF } from '../utils/generarRecetaPDF';
 import { io } from 'socket.io-client';
 
-const SOCKET_SERVER_URL = (import.meta.env.VITE_API_URL || 'http://localhost:4000/api').replace(/\/api\/?$/, '');
+
 
 export default function Dashboard() {
   const navigate = useNavigate();
@@ -403,9 +403,29 @@ export default function Dashboard() {
     .sort((a, b) => new Date(a.fecha_hora) - new Date(b.fecha_hora));
 
   // Próxima cita más inmediata (desde métricas del backend o lista de citas activas) (Tarea 5.4.7)
-  const proximaCita = (metricas.proxima_cita && metricas.proxima_cita.estado === 'PROGRAMADA' && (!citasList.length || citasProgramadas.some(c => c.id_cita === metricas.proxima_cita.id_cita)))
+  const inicioHoy = new Date(new Date().setHours(0, 0, 0, 0));
+  const citasProgramadasVigentes = citasProgramadas.filter(c => new Date(c.fecha_hora) >= inicioHoy);
+  const citaActivaEnSala = citasProgramadas.find(c => { const info = presenciaSalas[c.url_videollamada] || presenciaSalas[c.id_cita]; return info?.medicoPresente || info?.pacientePresente; });
+  const proximaCita = citaActivaEnSala || citasProgramadasVigentes[0] || ((metricas.proxima_cita && metricas.proxima_cita.estado === 'PROGRAMADA' && (!citasList.length || citasProgramadas.some(c => c.id_cita === metricas.proxima_cita.id_cita)))
     ? metricas.proxima_cita
-    : (citasProgramadas[0] || null);
+    : null) || citasProgramadas[0] || null;
+
+  const renderBadgePresenciaCita = (cita) => {
+    if (!cita || cita.estado !== 'PROGRAMADA') return null;
+    const infoSala = presenciaSalas[cita.url_videollamada] || presenciaSalas[cita.id_cita];
+    if (!infoSala || (!infoSala.medicoPresente && !infoSala.pacientePresente)) return null;
+    const texto = infoSala.medicoPresente && infoSala.pacientePresente
+      ? 'Videoconsulta en curso'
+      : infoSala.pacientePresente
+      ? 'Paciente ya en cita esperando al doctor'
+      : 'Doctor ya en cita esperando al paciente';
+    return (
+      <span className="inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full text-[11px] font-semibold bg-emerald-50 text-emerald-700 border border-emerald-200">
+        <span className="w-1.5 h-1.5 rounded-full bg-emerald-500 animate-pulse"></span>
+        <span>{texto}</span>
+      </span>
+    );
+  };
 
   // Saludo contextual personalizado para el Banner (Tarea 5.4.7)
   const nombreUsuario = usuario?.nombres 
@@ -1216,7 +1236,8 @@ export default function Dashboard() {
                           </div>
                         </div>
 
-                        <div className="flex items-center justify-between sm:justify-end gap-3 w-full sm:w-auto pt-2 sm:pt-0 border-t sm:border-t-0 border-slate-100">
+                        <div className="flex flex-wrap items-center justify-between sm:justify-end gap-3 w-full sm:w-auto pt-2 sm:pt-0 border-t sm:border-t-0 border-slate-100">
+                          {renderBadgePresenciaCita(cita)}
                           <span className={`text-[11px] font-semibold px-2.5 py-0.5 rounded-full ${
                             cita.estado === 'PROGRAMADA' 
                               ? 'bg-blue-50 text-blue-700 border border-blue-200' 
@@ -1351,7 +1372,8 @@ export default function Dashboard() {
                           </div>
                         </div>
 
-                        <div className="flex items-center justify-between md:justify-end gap-3 w-full md:w-auto pt-3 md:pt-0 border-t md:border-t-0 border-slate-100">
+                        <div className="flex flex-wrap items-center justify-between md:justify-end gap-3 w-full md:w-auto pt-3 md:pt-0 border-t md:border-t-0 border-slate-100">
+                          {renderBadgePresenciaCita(cita)}
                           <span className={`text-xs font-semibold px-3 py-1 rounded-full ${
                             cita.estado === 'PROGRAMADA' 
                               ? 'bg-blue-50 text-blue-700 border border-blue-200' 
@@ -1827,6 +1849,7 @@ export default function Dashboard() {
           }}
           idCita={citaSeleccionadaId}
           onCitaActualizada={handleCitaAgendada}
+          presenciaSalas={presenciaSalas}
           usuario={usuario}
         />
       </ErrorBoundary>
