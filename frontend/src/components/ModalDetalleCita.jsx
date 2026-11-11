@@ -13,7 +13,8 @@ export default function ModalDetalleCita({
   onClose,
   idCita,
   usuario,
-  onCitaActualizada
+  onCitaActualizada,
+  presenciaSalas = {}
 }) {
   const navigate = useNavigate();
   const [cita, setCita] = useState(null);
@@ -59,6 +60,7 @@ export default function ModalDetalleCita({
   if (!isOpen) return null;
 
   const isMedico = usuario?.rol === 'MEDICO';
+  const infoSala = cita ? (presenciaSalas[cita.url_videollamada] || presenciaSalas[cita.id_cita]) : null;
 
   // Manejador para copiar la URL de la sala al portapapeles
   const handleCopiarEnlace = () => {
@@ -372,31 +374,51 @@ export default function ModalDetalleCita({
               {/* Tarjeta 3: Sala Virtual y Cumplimiento RN-04 */}
               {cita.estado === 'PROGRAMADA' && (
                 <div className={`border rounded-2xl p-5 ${
-                  cita.sala_habilitada 
+                  cita.sala_habilitada || infoSala?.medicoPresente || infoSala?.pacientePresente
                     ? 'bg-teal-50/50 border-teal-200' 
                     : 'bg-amber-50/50 border-amber-200'
                 }`}>
                   <div className="flex items-start justify-between gap-3">
                     <div className="flex items-start gap-3">
                       <div className={`w-10 h-10 rounded-2xl flex items-center justify-center flex-shrink-0 ${
-                        cita.sala_habilitada 
+                        cita.sala_habilitada || infoSala?.medicoPresente || infoSala?.pacientePresente
                           ? 'bg-teal-600 text-white shadow-sm' 
                           : 'bg-amber-500 text-white shadow-sm'
                       }`}>
                         <Video className="w-5 h-5" />
                       </div>
                       <div>
-                        <h4 className="font-bold text-slate-900 text-sm">
-                          {cita.sala_habilitada ? 'Sala Virtual Disponible' : 'Sala de Espera Virtual (RN-04)'}
-                        </h4>
+                        <div className="flex flex-wrap items-center gap-2">
+                          <h4 className="font-bold text-slate-900 text-sm">
+                            {cita.sala_habilitada ? 'Sala Virtual Disponible' : 'Sala de Espera Virtual (RN-04)'}
+                          </h4>
+                          {!cita.sala_habilitada && cita.minutos_para_apertura > 0 && (
+                            <span className="text-[11px] font-semibold text-amber-700 bg-amber-100/80 px-2.5 py-0.5 rounded-full border border-amber-200 flex items-center gap-1">
+                              <Clock className="w-3 h-3" />
+                              <span>Horario oficial en {cita.minutos_para_apertura} min</span>
+                            </span>
+                          )}
+                        </div>
                         <p className="text-xs text-slate-600 mt-1 leading-relaxed">
                           {cita.sala_habilitada 
                             ? isMedico 
                               ? 'Como médico asignado, tienes acceso prioritario para configurar y preparar tu consultorio virtual.' 
                               : 'La sala de consulta está habilitada. Puedes ingresar y conectarte con tu especialista ahora.'
-                            : `Conforme a las reglas de atención (RN-04), el acceso para el paciente se habilitará 10 minutos antes de la hora pactada. Faltan aproximadamente ${cita.minutos_para_apertura} minutos.`
+                            : `Conforme a las reglas de atención (RN-04), la apertura programada es 10 minutos antes de la hora pactada. La sala ya se encuentra lista para ingresar.`
                           }
                         </p>
+                        {infoSala && (infoSala.medicoPresente || infoSala.pacientePresente) && (
+                          <p className="text-xs text-emerald-600 font-semibold flex items-center gap-1.5 mt-2">
+                            <span className="w-2 h-2 rounded-full bg-emerald-500 animate-pulse"></span>
+                            <span>
+                              {infoSala.medicoPresente && infoSala.pacientePresente
+                                ? 'Videoconsulta en curso (Médico y Paciente en sala)'
+                                : infoSala.pacientePresente
+                                ? 'Paciente ya en cita esperando al doctor'
+                                : 'Doctor ya en cita esperando al paciente'}
+                            </span>
+                          </p>
+                        )}
                       </div>
                     </div>
                   </div>
@@ -419,21 +441,14 @@ export default function ModalDetalleCita({
                       </span>
                     </div>
 
-                    {cita.sala_habilitada ? (
-                      <button
-                        type="button"
-                        onClick={handleEntrarSala}
-                        className="w-full sm:w-auto px-5 py-2.5 bg-teal-600 hover:bg-teal-700 text-white font-semibold text-xs rounded-xl shadow-md hover:shadow-lg transition-all flex items-center justify-center gap-2 cursor-pointer"
-                      >
-                        <Video className="w-4 h-4" />
-                        <span>Entrar a Videollamada</span>
-                      </button>
-                    ) : (
-                      <div className="text-xs font-semibold text-amber-700 bg-amber-100/70 px-3 py-1.5 rounded-xl border border-amber-200 flex items-center gap-1.5">
-                        <Clock className="w-3.5 h-3.5" />
-                        <span>Apertura en {cita.minutos_para_apertura} min</span>
-                      </div>
-                    )}
+                    <button
+                      type="button"
+                      onClick={handleEntrarSala}
+                      className="w-full sm:w-auto px-5 py-2.5 bg-teal-600 hover:bg-teal-700 text-white font-semibold text-xs rounded-xl shadow-md hover:shadow-lg transition-all flex items-center justify-center gap-2 cursor-pointer"
+                    >
+                      <Video className="w-4 h-4" />
+                      <span>Entrar a Videollamada</span>
+                    </button>
                   </div>
                 </div>
               )}
@@ -576,7 +591,7 @@ export default function ModalDetalleCita({
             >
               Cerrar
             </button>
-            {cita && cita.estado === 'PROGRAMADA' && cita.sala_habilitada && (
+            {cita && cita.estado === 'PROGRAMADA' && (
               <button
                 type="button"
                 onClick={handleEntrarSala}
