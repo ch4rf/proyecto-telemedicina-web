@@ -326,7 +326,7 @@ export default function Login() {
           </div>
 
           {/* Ingreso con tarjeta RFID (ESP32) */}
-          <LectorRfid />
+          <LectorRfid onRolDetectado={handleCambioRol} />
 
           {/* Alerta Visual de Errores */}
           {mensajeError && (

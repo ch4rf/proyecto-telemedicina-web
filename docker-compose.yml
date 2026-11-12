@@ -10,6 +10,8 @@ services:
       POSTGRES_USER: admin_telemedicina
       POSTGRES_PASSWORD: password_seguro_123
       POSTGRES_DB: telemedicina_db
+      TZ: America/Guatemala
+      PGTZ: America/Guatemala
     ports:
       - "5433:5432"
     volumes:
