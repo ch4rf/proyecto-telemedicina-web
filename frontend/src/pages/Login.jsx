@@ -6,6 +6,7 @@ import {
 import { useNavigate } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
 import { api } from '../services/api';
+import LectorRfid from '../components/LectorRfid'; // Lector RFID (ESP32)
 
 export default function Login() {
   const [rol, setRol] = useState('PACIENTE'); // 'PACIENTE' o 'MEDICO'
@@ -323,6 +324,9 @@ export default function Login() {
               <span>Portal Médico</span>
             </button>
           </div>
+
+          {/* Ingreso con tarjeta RFID (ESP32) */}
+          <LectorRfid />
 
           {/* Alerta Visual de Errores */}
           {mensajeError && (
