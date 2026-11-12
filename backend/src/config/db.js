@@ -9,8 +9,9 @@ const pool = new Pool({
   port: Number(process.env.DB_PORT) || 5433,
 });
 
-pool.on('connect', () => {
-  console.log('Conectado a la base de datos PostgreSQL');
+pool.on('connect', (client) => {
+  client.query("SET TIME ZONE 'America/Guatemala'").catch(() => {});
+  console.log('Conectado a la base de datos PostgreSQL (Zona horaria: America/Guatemala)');
 });
 
 pool.on('error', (err) => {

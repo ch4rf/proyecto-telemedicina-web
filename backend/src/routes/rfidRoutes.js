@@ -3,8 +3,11 @@ const router = express.Router();
 const rfidController = require('../controllers/rfidController');
 const { verificarToken } = require('../middlewares/authMiddleware');
 
-// Lo usa el ESP32 (protegido con la clave del lector)
+// Lo usa el ESP32 por Wi-Fi (protegido con la clave del lector)
 router.post('/lectura', rfidController.recibirLectura);
+
+// Lo usa el navegador cuando el ESP32 esta conectado por Cable USB (Web Serial API)
+router.post('/lectura-usb', rfidController.recibirLecturaUsb);
 
 // Lo usa la pagina de Login para entrar con tarjeta
 router.get('/estado', rfidController.estadoLogin);

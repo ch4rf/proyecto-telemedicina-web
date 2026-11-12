@@ -26,6 +26,14 @@ const asegurarTablas = async () => {
         );
     `);
 
+    // Corregir registros previos que se hayan guardado con desfase UTC (+6h respecto a Guatemala)
+    await pool.query(
+        `UPDATE accesos_rfid
+         SET fecha = fecha - INTERVAL '6 hours'
+         WHERE fecha > $1::timestamp + INTERVAL '1 hour'`,
+        [new Date()]
+    );
+
     tablasListas = true;
 };
 
@@ -71,8 +79,8 @@ const asignarTarjeta = async (uid, id_usuario) => {
         await client.query('BEGIN');
         await client.query('DELETE FROM tarjetas_rfid WHERE id_usuario = $1', [id_usuario]);
         await client.query(
-            'INSERT INTO tarjetas_rfid (uid_tarjeta, id_usuario) VALUES ($1, $2)',
-            [uid, id_usuario]
+            'INSERT INTO tarjetas_rfid (uid_tarjeta, id_usuario, fecha_registro) VALUES ($1, $2, $3)',
+            [uid, id_usuario, new Date()]
         );
         await client.query('COMMIT');
     } catch (error) {
@@ -93,12 +101,12 @@ const quitarTarjeta = async (id_usuario) => {
     return result.rows[0] || null;
 };
 
-// Guardar en la bitacora cada vez que pasan una tarjeta
+// Guardar en la bitacora cada vez que pasan una tarjeta (usando hora local de Guatemala)
 const registrarAcceso = async (uid, id_usuario, resultado) => {
     await asegurarTablas();
     await pool.query(
-        'INSERT INTO accesos_rfid (uid_tarjeta, id_usuario, resultado) VALUES ($1, $2, $3)',
-        [uid, id_usuario, resultado]
+        'INSERT INTO accesos_rfid (uid_tarjeta, id_usuario, resultado, fecha) VALUES ($1, $2, $3, $4)',
+        [uid, id_usuario, resultado, new Date()]
     );
 };
 
