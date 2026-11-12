@@ -174,6 +174,14 @@ Objetivo: Lograr que el Médico y el Paciente conectados desde distintos navegad
 
 ---
 
+### Módulo 8.3: Control de Acceso y Autenticación con Tarjeta RFID (ESP32 + RC522)
+*Rama de Git asignada:* `feature/rfid-esp32`
+
+- [x] **8.3.1 Firmware MicroPython en ESP32 y Esquema de Base de Datos RFID:** Integrar `esp32/mfrc522.py`, `esp32/config.py`, `esp32/main.py` y las tablas `tarjetas_rfid` y `accesos_rfid` en PostgreSQL con zona horaria `America/Guatemala`.
+- [x] **8.3.2 Backend y Frontend RFID en Modo Híbrido (Wi-Fi + Cable USB Web Serial):** Integrar rutas `/api/rfid`, login automático por tarjeta en `LectorRfid.jsx` y panel de vinculación/bitácora en `TarjetaRfid.jsx` funcionando tanto por Wi-Fi como por Cable USB directo (`lectorSerialRfid.js`).
+
+---
+
 ## Fase 9: Preparación para Producción, CI/CD con GitHub Actions y Despliegue en Azure (Al Final)
 Objetivo: Parametrizar las URLs para producción, crear el pipeline automatizado de GitHub Actions y desplegar la aplicación completa en la nube (Azure for Students).
 
@@ -182,7 +190,7 @@ Objetivo: Parametrizar las URLs para producción, crear el pipeline automatizado
 
 - [x] **9.1.1 URL Dinámica en Frontend y CORS en Backend:** Modificar `frontend/src/services/api.js` para usar `import.meta.env.VITE_API_URL || 'http://localhost:4000/api'` (y la misma base para el Socket de videollamada), de forma que funcione tanto en `localhost` como en Azure sin tocar código.
   - *Prueba de verificación:* Ejecutar `npm run build` en `frontend/` y `npm run dev` en local comprobando que todo sigue conectando a `localhost:4000` por defecto.
-- [ ] **9.1.2 Creación de `Dockerfile` para Backend y Frontend:** Crear `backend/Dockerfile` y `frontend/Dockerfile` optimizados para producción y actualizar `docker-compose.yml` para validar el levantamiento completo.
+- [x] **9.1.2 Creación de `Dockerfile` para Backend y Frontend:** Crear `backend/Dockerfile` y `frontend/Dockerfile` optimizados para producción y actualizar `docker-compose.yml` para validar el levantamiento completo.
   - *Prueba de verificación:* Verificar que el build de ambos proyectos finaliza con código `0` sin errores ni dependencias faltantes.
 
 ### Módulo 9.2: Pipeline CI/CD en GitHub Actions y Despliegue en Azure
