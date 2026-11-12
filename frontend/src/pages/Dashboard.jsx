@@ -2,7 +2,7 @@ import React, { useState, useEffect, useRef } from 'react';
 import { 
   Activity, LayoutDashboard, CalendarDays, Users, FileText, LogOut, 
   Search, Bell, User, X, Loader2, Stethoscope, Clock, CheckCircle2, Check,
-  Menu, Filter, Pill, ChevronRight, Video, Calendar, ArrowRight, Trash2
+  Menu, Filter, Pill, ChevronRight, Video, Calendar, ArrowRight, Trash2, CreditCard
 } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
@@ -11,6 +11,7 @@ import ModalPerfil from '../components/ModalPerfil';
 import ModalAgendarCita from '../components/ModalAgendarCita';
 import ModalDetalleCita from '../components/ModalDetalleCita';
 import ErrorBoundary from '../components/ErrorBoundary';
+import TarjetaRfid from '../components/TarjetaRfid'; // Lector RFID (ESP32)
 import { generarRecetaPDF } from '../utils/generarRecetaPDF';
 import { io } from 'socket.io-client';
 
@@ -520,6 +521,18 @@ export default function Dashboard() {
               <span>Catálogo Médico</span>
             </button>
           )}
+          <button
+            type="button"
+            onClick={() => { setVistaActiva('rfid'); setMenuMovilAbierto(false); }}
+            className={`flex items-center gap-3 px-3 py-2.5 w-full rounded-xl transition-all cursor-pointer ${
+              vistaActiva === 'rfid'
+                ? 'bg-teal-500/10 text-teal-400 border border-teal-500/20 font-semibold'
+                : 'text-slate-400 hover:bg-slate-800 hover:text-white font-medium'
+            }`}
+          >
+            <CreditCard className="w-5 h-5" />
+            <span>Acceso con Tarjeta</span>
+          </button>
         </nav>
 
         <div className="p-4 border-t border-slate-800">
@@ -624,6 +637,18 @@ export default function Dashboard() {
               <span>Catálogo Médico</span>
             </button>
           )}
+          <button
+            type="button"
+            onClick={() => { setVistaActiva('rfid'); setMenuMovilAbierto(false); }}
+            className={`flex items-center gap-3 px-3 py-2.5 w-full rounded-xl transition-all cursor-pointer ${
+              vistaActiva === 'rfid'
+                ? 'bg-teal-500/10 text-teal-400 border border-teal-500/20 font-semibold'
+                : 'text-slate-400 hover:bg-slate-800 hover:text-white font-medium'
+            }`}
+          >
+            <CreditCard className="w-5 h-5" />
+            <span>Acceso con Tarjeta</span>
+          </button>
         </nav>
 
             <div className="p-4 border-t border-slate-800">
@@ -660,6 +685,7 @@ export default function Dashboard() {
               {vistaActiva === 'directorio' && 'Directorio Médico'}
               {vistaActiva === 'expedientes' && (isPatient ? 'Mis Recetas y Diagnósticos' : 'Expedientes Clínicos')}
               {vistaActiva === 'catalogo' && 'Catálogo Clínico de Medicamentos'}
+              {vistaActiva === 'rfid' && 'Acceso con Tarjeta RFID'}
             </h2>
           </div>
           
@@ -960,6 +986,9 @@ export default function Dashboard() {
                   {isPatient ? 'Agendar Nueva Cita' : 'Ver Mi Agenda'}
                 </button>
               </div>
+
+
+
 
               {/* Grid de Estadísticas y KPIs Reales (Tarea 5.4.6) */}
               <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
@@ -1504,6 +1533,20 @@ export default function Dashboard() {
                     ))}
                 </div>
               )}
+            </div>
+          )}
+
+          {/* VISTA RFID: Acceso con Tarjeta (ESP32 + RC522) */}
+          {vistaActiva === 'rfid' && (
+            <div className="max-w-6xl mx-auto space-y-6 animate-fadeIn">
+              <div className="pb-4 border-b border-slate-200">
+                <h3 className="text-2xl font-bold text-slate-800">Acceso con Tarjeta RFID</h3>
+                <p className="text-sm text-slate-500 mt-1">
+                  Vincula tu tarjeta o llavero RFID con el lector ESP32 para ingresar rápidamente sin contraseña y consulta la bitácora de accesos.
+                </p>
+              </div>
+              <TarjetaRfid />
+
             </div>
           )}
 

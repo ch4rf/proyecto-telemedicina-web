@@ -42,6 +42,7 @@ const usuarioRoutes = require('./routes/usuarioRoutes');
 const busquedaRoutes = require('./routes/busquedaRoutes');
 const consultaRoutes = require('./routes/consultaRoutes');
 const statsRoutes = require('./routes/statsRoutes');
+const rfidRoutes = require('./routes/rfidRoutes'); // Lector RFID (ESP32)
 require('./repositories/medicamentoRepository');
 
 app.use('/api/auth', authRoutes);
@@ -53,6 +54,7 @@ app.use('/api/usuarios', usuarioRoutes);
 app.use('/api/buscar', busquedaRoutes);
 app.use('/api/consultas', consultaRoutes);
 app.use('/api/dashboard', statsRoutes);
+app.use('/api/rfid', rfidRoutes); // Lector RFID (ESP32)
 
 // Ruta de prueba para verificar conexión
 app.get('/api/health', async (req, res) => {
