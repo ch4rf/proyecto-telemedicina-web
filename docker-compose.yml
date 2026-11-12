@@ -1,7 +1,7 @@
 version: '3.8'
 
 services:
-  # PostgreSQL
+  # Base de Datos PostgreSQL 15
   postgres_db:
     image: postgres:15-alpine
     container_name: telemedicina_db
@@ -20,7 +20,7 @@ services:
     networks:
       - telemedicina_network
 
-  # pgAdmin
+  # Administrador Web pgAdmin 4
   pgadmin:
     image: dpage/pgadmin4
     container_name: telemedicina_pgadmin
@@ -32,6 +32,50 @@ services:
       - "5050:80"
     depends_on:
       - postgres_db
+    networks:
+      - telemedicina_network
+
+  # Backend API REST + Socket.io (Perfil de contenedores completos: docker compose --profile prod up -d)
+  backend:
+    build:
+      context: ./backend
+      dockerfile: Dockerfile
+    container_name: telemedicina_backend
+    restart: always
+    profiles:
+      - prod
+    environment:
+      PORT: 4000
+      DB_USER: admin_telemedicina
+      DB_PASSWORD: password_seguro_123
+      DB_HOST: postgres_db
+      DB_PORT: 5432
+      DB_NAME: telemedicina_db
+      JWT_SECRET: super_secreto_para_jwt_123!
+      RFID_CLAVE: clave_esp32_123
+      TZ: America/Guatemala
+    ports:
+      - "4000:4000"
+    depends_on:
+      - postgres_db
+    networks:
+      - telemedicina_network
+
+  # Frontend React + Nginx (Perfil de contenedores completos: docker compose --profile prod up -d)
+  frontend:
+    build:
+      context: ./frontend
+      dockerfile: Dockerfile
+      args:
+        VITE_API_URL: /api
+    container_name: telemedicina_frontend
+    restart: always
+    profiles:
+      - prod
+    ports:
+      - "8080:80"
+    depends_on:
+      - backend
     networks:
       - telemedicina_network
 
