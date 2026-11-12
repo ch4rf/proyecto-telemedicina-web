@@ -14,6 +14,16 @@ El sistema conecta en tiempo real a pacientes y médicos especialistas mediante 
 
 ---
 
+## Despliegue en Producción (Microsoft Azure Cloud)
+
+El sistema se encuentra desplegado y operativo en la nube de **Microsoft Azure** (`West US 2` — Contenedores Docker + Reverse Proxy SSL/TLS automático para WebRTC y Web Serial RFID):
+
+* **URL Pública Principal (HTTPS Seguro):** [https://novasalud-umg.westus2.cloudapp.azure.com](https://novasalud-umg.westus2.cloudapp.azure.com)
+* **URL Alternativa HTTPS (`sslip.io`):** [https://20.115.129.185.sslip.io](https://20.115.129.185.sslip.io)
+* **IP Pública / Endpoint HTTP para ESP32 RFID:** `http://20.115.129.185`
+
+---
+
 ## Arquitectura y Características Principales
 
 * **`/frontend` (React 19 + Vite + Tailwind CSS):**

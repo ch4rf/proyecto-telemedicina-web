@@ -196,7 +196,7 @@ Objetivo: Parametrizar las URLs para producción, crear el pipeline automatizado
 ### Módulo 9.2: Pipeline CI/CD en GitHub Actions y Despliegue en Azure
 *Rama de Git asignada:* `feature/ci-cd-azure`
 
-- [ ] **9.2.1 Creación del Pipeline `.github/workflows/ci-cd.yml`:** Crear el flujo automatizado de GitHub Actions que se dispare en cada `push` y `pull_request` hacia `main`, instale dependencias de Backend y Frontend, verifique la sintaxis, ejecute el `build` de producción de React y genere el artefacto publicable.
+- [x] **9.2.1 Creación del Pipeline `.github/workflows/ci-cd.yml`:** Crear el flujo automatizado de GitHub Actions que se dispare en cada `push` y `pull_request` hacia `main`, instale dependencias de Backend y Frontend, verifique la sintaxis, ejecute el `build` de producción de React y genere el artefacto publicable.
   - *Prueba de verificación:* Subir la rama a GitHub, abrir el Pull Request y comprobar en la pestaña **"Actions"** de GitHub que aparece el check verde (`✓`) de compilación exitosa.
-- [ ] **9.2.2 Despliegue en la Nube (Azure App Service / Container Apps + PostgreSQL):** Configurar la base de datos en la nube con el script `database/init.sql`, conectar las variables de entorno (`DB_HOST`, `JWT_SECRET`, `VITE_API_URL`) y conectar el paso de despliegue continuo en GitHub Actions hacia Azure.
-  - *Prueba de verificación:* Abrir la URL pública `https://...` generada en Azure desde cualquier navegador o teléfono móvil, iniciar sesión con las cuentas demo y realizar una cita con videollamada completa.
+- [x] **9.2.2 Despliegue en la Nube (Azure App Service / Container Apps + PostgreSQL):** Configurar la base de datos en la nube con el script `database/init.sql`, conectar las variables de entorno (`DB_HOST`, `JWT_SECRET`, `VITE_API_URL`) y conectar el paso de despliegue continuo en GitHub Actions hacia Azure.
+  - *Prueba de verificación:* Abrir la URL pública `https://novasalud-umg.westus2.cloudapp.azure.com` generada en Azure desde cualquier navegador o teléfono móvil, iniciar sesión con las cuentas demo y realizar una cita con videollamada completa.
