@@ -119,5 +119,5 @@ El módulo RFID soporta **dos modos de operación simultáneos**:
 
 | Rol | Correo Electrónico | Contraseña | Nombre |
 | :--- | :--- | :--- | :--- |
-| **Médico** | `josec@gmail.com` | `Jose272006` | Dr. Josué Caal |
-| **Paciente** | `adami@gmail.com` | `Adami272006` | Adami Oliva |
+| **Médico** | `josec@gmail.com` | `Jose272006` | Dr. Jose Roberto Chub Cuc |
+| **Paciente** | `adami@gmail.com` | `Adami272006` | Adami Ramiro Oliva Martinez |
