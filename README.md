@@ -119,6 +119,5 @@ El módulo RFID soporta **dos modos de operación simultáneos**:
 
 | Rol | Correo Electrónico | Contraseña | Nombre |
 | :--- | :--- | :--- | :--- |
-| **Médico** | `estuardo@email.com` | `123` | Dr. Estuardo Caal |
-| **Paciente** | `paciente@test.com` | `123` | Juan Pérez |
-| **Administrador** | `admin@telemedicina.com` | `admin123` | Administrador Sistema |
+| **Médico** | `josec@gmail.com` | `Jose272006` | Dr. Josué Caal |
+| **Paciente** | `adami@gmail.com` | `Adami272006` | Adami Oliva |
