@@ -12,6 +12,10 @@ router.post('/lectura-usb', rfidController.recibirLecturaUsb);
 // Lo usa la pagina de Login para entrar con tarjeta
 router.get('/estado', rfidController.estadoLogin);
 
+// Control de recepcion remota por WiFi para multiples computadoras
+router.post('/esperar-wifi', rfidController.activarEsperaWifi);
+router.post('/cancelar-wifi', rfidController.cancelarEsperaWifi);
+
 // Con sesion iniciada
 router.get('/mi-tarjeta', verificarToken, rfidController.miTarjeta);
 router.post('/registrar', verificarToken, rfidController.iniciarRegistro);

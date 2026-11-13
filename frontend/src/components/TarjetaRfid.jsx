@@ -1,9 +1,5 @@
-// Panel de la tarjeta RFID dentro del Dashboard
-// - Ver mi tarjeta
-// - Registrar tarjeta nueva / reportar tarjeta perdida (por Wi-Fi o por Cable USB directo)
-// - Ver quien ha entrado con tarjeta
 import React, { useEffect, useState } from 'react';
-import { CreditCard, Loader2, Trash2, LogIn, AlertCircle, Calendar, Usb } from 'lucide-react';
+import { CreditCard, Loader2, Trash2, LogIn, AlertCircle, Calendar, Usb, Wifi } from 'lucide-react';
 import { api } from '../services/api';
 import {
   esWebSerialSoportado,
@@ -11,6 +7,15 @@ import {
   desconectarSerialRfid,
   suscribirEstadoSerialRfid
 } from '../utils/lectorSerialRfid';
+
+const obtenerClienteId = () => {
+  let id = localStorage.getItem('rfid_cliente_id');
+  if (!id) {
+    id = 'cli_' + Math.random().toString(36).substring(2, 10);
+    localStorage.setItem('rfid_cliente_id', id);
+  }
+  return id;
+};
 
 export default function TarjetaRfid() {
   const [tarjeta, setTarjeta] = useState(null);
@@ -22,6 +27,8 @@ export default function TarjetaRfid() {
   const [mensaje, setMensaje] = useState('');
   const [error, setError] = useState('');
   const [usbConectado, setUsbConectado] = useState(false);
+  const [wifiActivo, setWifiActivo] = useState(false);
+  const clienteId = obtenerClienteId();
 
   useEffect(() => {
     const cancelar = suscribirEstadoSerialRfid(setUsbConectado);
@@ -44,19 +51,17 @@ export default function TarjetaRfid() {
       const res = await api.get('/rfid/accesos');
       setAccesos(res.data || []);
     } catch {
-      // no pasa nada si falla
+      // Se omite en caso de desconexion temporal
     }
   };
 
   useEffect(() => {
     cargarDatos();
     cargarAccesos();
-    // refrescar la lista de accesos cada 5 segundos
     const intervalo = setInterval(cargarAccesos, 5000);
     return () => clearInterval(intervalo);
   }, []);
 
-  // mientras esta registrando, revisamos cada segundo si ya paso la tarjeta y actualizamos cuenta regresiva
   useEffect(() => {
     if (!registrando) return;
     const intervalo = setInterval(async () => {
@@ -79,6 +84,13 @@ export default function TarjetaRfid() {
     setError('');
     setConfirmarPerdida(false);
     try {
+      // Si la conexion es por WiFi se avisa al backend
+      try {
+        await api.post('/rfid/esperar-wifi', { clienteId });
+        setWifiActivo(true);
+      } catch {
+        // Modo local activo
+      }
       const res = await api.post('/rfid/registrar', {});
       setMensaje(res.mensaje);
       setSegundosRestantes(20);
@@ -113,13 +125,26 @@ export default function TarjetaRfid() {
         await conectarSerialRfid();
       }
     } catch {
-      // Usuario cancelo la seleccion o el puerto ya esta abierto en otra ventana
+      // Seleccion cancelada
+    }
+  };
+
+  const handleToggleWifi = async () => {
+    try {
+      if (wifiActivo) {
+        await api.post('/rfid/cancelar-wifi', { clienteId });
+        setWifiActivo(false);
+      } else {
+        await api.post('/rfid/esperar-wifi', { clienteId });
+        setWifiActivo(true);
+      }
+    } catch {
+      // Error de enlace
     }
   };
 
   return (
     <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-      {/* Mi tarjeta */}
       <div className="bg-white p-6 rounded-2xl border border-slate-200 shadow-sm">
         <div className="flex items-start justify-between gap-3 mb-4">
           <div className="flex items-center gap-3">
@@ -130,40 +155,43 @@ export default function TarjetaRfid() {
               <h3 className="text-lg font-semibold text-slate-800">Mi tarjeta de acceso</h3>
               <p className="text-xs text-slate-500">
                 {usbConectado
-                  ? 'Modo híbrido activo (Lector conectado por Cable USB + Wi-Fi)'
-                  : 'Ingreso rápido con el lector RFID (Wi-Fi o Cable USB)'}
+                  ? 'Modo hibrido activo con lector por cable USB y red WiFi'
+                  : 'Ingreso rapido con el lector RFID por red WiFi o cable USB'}
               </p>
             </div>
           </div>
 
-          {esWebSerialSoportado() && (
+          <div className="flex items-center gap-2 shrink-0">
             <button
               type="button"
-              onClick={handleToggleUsb}
-              title={
-                usbConectado
-                  ? 'Lector conectado por cable USB (clic para desconectar)'
-                  : 'Conectar lector directamente por cable USB (funciona en cualquier PC o en la nube sin Wi-Fi)'
-              }
-              className={`px-3 py-1.5 rounded-xl text-xs font-semibold border flex items-center gap-1.5 shrink-0 transition-all cursor-pointer ${
-                usbConectado
-                  ? 'bg-emerald-50 text-emerald-700 border-emerald-200 hover:bg-emerald-100'
+              onClick={handleToggleWifi}
+              title={wifiActivo ? 'Desactivar escucha remota por WiFi' : 'Habilitar recepcion remota por red WiFi'}
+              className={`px-3 py-1.5 rounded-xl text-xs font-semibold border flex items-center gap-1.5 transition-all cursor-pointer ${
+                wifiActivo
+                  ? 'bg-teal-50 text-teal-700 border-teal-300 hover:bg-teal-100'
                   : 'bg-slate-50 text-slate-700 border-slate-200 hover:bg-slate-100'
               }`}
             >
-              {usbConectado ? (
-                <>
-                  <span className="w-2 h-2 rounded-full bg-emerald-500 animate-pulse"></span>
-                  <span>USB Activo</span>
-                </>
-              ) : (
-                <>
-                  <Usb className="w-3.5 h-3.5 text-teal-600" />
-                  <span>Conectar USB</span>
-                </>
-              )}
+              <Wifi className="w-3.5 h-3.5 text-teal-600" />
+              <span>{wifiActivo ? 'WiFi Activo' : 'Conectar WiFi'}</span>
             </button>
-          )}
+
+            {esWebSerialSoportado() && (
+              <button
+                type="button"
+                onClick={handleToggleUsb}
+                title={usbConectado ? 'Desconectar cable USB' : 'Conectar lector directamente por cable USB'}
+                className={`px-3 py-1.5 rounded-xl text-xs font-semibold border flex items-center gap-1.5 transition-all cursor-pointer ${
+                  usbConectado
+                    ? 'bg-emerald-50 text-emerald-700 border-emerald-200 hover:bg-emerald-100'
+                    : 'bg-slate-50 text-slate-700 border-slate-200 hover:bg-slate-100'
+                }`}
+              >
+                <Usb className="w-3.5 h-3.5 text-teal-600" />
+                <span>{usbConectado ? 'USB Activo' : 'Conectar USB'}</span>
+              </button>
+            )}
+          </div>
         </div>
 
         <div className="mb-4 space-y-1">
@@ -186,7 +214,6 @@ export default function TarjetaRfid() {
         {mensaje && <div className="mb-3 p-3 bg-teal-50 border border-teal-200 rounded-lg text-xs text-teal-700 font-medium">{mensaje}</div>}
         {error && <div className="mb-3 p-3 bg-rose-50 border border-rose-200 rounded-lg text-xs text-rose-600 font-medium">{error}</div>}
 
-        {/* Confirmación estilizada para reportar pérdida */}
         {confirmarPerdida && tarjeta && (
           <div className="mb-4 p-3.5 bg-rose-50/80 border border-rose-200 rounded-xl space-y-2.5 animate-fadeIn">
             <div className="flex items-start gap-2 text-xs text-rose-800">
@@ -230,7 +257,7 @@ export default function TarjetaRfid() {
             {registrando ? (
               <>
                 <Loader2 className="w-4 h-4 animate-spin text-teal-400" />
-                <span>Esperando tarjeta ({segundosRestantes}s)...</span>
+                <span>Esperando tarjeta: {segundosRestantes} segundos</span>
               </>
             ) : (
               <span>{tarjeta ? 'Cambiar tarjeta' : 'Registrar tarjeta'}</span>
@@ -253,7 +280,6 @@ export default function TarjetaRfid() {
         </div>
       </div>
 
-      {/* Quien ha entrado */}
       <div className="bg-white p-6 rounded-2xl border border-slate-200 shadow-sm">
         <div className="flex items-center gap-3 mb-4">
           <div className="p-3 bg-teal-50 text-teal-600 rounded-xl">
@@ -273,7 +299,7 @@ export default function TarjetaRfid() {
               <li key={a.id_acceso} className="py-2.5 flex items-center justify-between gap-3 text-sm">
                 <div>
                   <p className="font-medium text-slate-800">
-                    {a.nombres ? `${a.nombres} ${a.apellidos}` : `Tarjeta desconocida (${a.uid_tarjeta})`}
+                    {a.nombres ? `${a.nombres} ${a.apellidos}` : `Tarjeta no vinculada: ${a.uid_tarjeta}`}
                   </p>
                   <p className="text-xs text-slate-500">
                     {new Date(a.fecha).toLocaleString('es-GT')}{a.rol ? ` · ${a.rol === 'MEDICO' ? 'Médico' : a.rol === 'PACIENTE' ? 'Paciente' : a.rol}` : ''}
