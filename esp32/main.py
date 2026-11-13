@@ -1,7 +1,7 @@
 # Proyecto: Login con RFID para el sistema de Telemedicina (NovaSalud)
 # Arquitectura de Computadoras 2
-# ESP32 + RC522 en MicroPython (Modo Hibrido: Wi-Fi + Cable USB Directo)
-# Lee el numero (UID) de la tarjeta, lo envia por USB (Serial) y si hay Wi-Fi tambien al backend
+# ESP32 + RC522 en MicroPython (Modo Hibrido: Wi-Fi hacia Azure + Cable USB Directo)
+# Lee el numero (UID) de la tarjeta, lo envia por USB (Serial) y por Wi-Fi al servidor en la nube
 
 import network
 import time
@@ -19,37 +19,87 @@ led = Pin(2, Pin.OUT)
 
 # pines igual que en el dibujo de conexiones
 lector = MFRC522(sck=18, mosi=23, miso=19, rst=22, cs=5)
+wifi = network.WLAN(network.STA_IF)
 wifi_disponible = False
+ultimo_intento_wifi = 0
+
+
+def obtener_redes_configuradas():
+    redes = []
+    if hasattr(config, "REDES_WIFI") and isinstance(config.REDES_WIFI, list):
+        for item in config.REDES_WIFI:
+            if isinstance(item, (tuple, list)) and len(item) == 2:
+                ssid, clave = item
+                if ssid and ssid != "TU_WIFI":
+                    redes.append((ssid, clave))
+    ssid_principal = getattr(config, "WIFI_NOMBRE", "")
+    clave_principal = getattr(config, "WIFI_CLAVE", "")
+    if ssid_principal and ssid_principal != "TU_WIFI":
+        if (ssid_principal, clave_principal) not in redes:
+            redes.insert(0, (ssid_principal, clave_principal))
+    return redes
 
 
 def conectar_wifi():
-    global wifi_disponible
-    if not getattr(config, "WIFI_NOMBRE", "") or config.WIFI_NOMBRE == "TU_WIFI":
+    global wifi_disponible, ultimo_intento_wifi
+    ultimo_intento_wifi = time.time()
+
+    redes = obtener_redes_configuradas()
+    if not redes:
         print("Modo Cable USB Directo activo (sin Wi-Fi configurado)")
         wifi_disponible = False
         return False
 
-    wifi = network.WLAN(network.STA_IF)
     wifi.active(True)
-    if not wifi.isconnected():
-        print("Conectando a WiFi", end="")
+    if wifi.isconnected():
+        wifi_disponible = True
+        return True
+
+    # Escanear redes cercanas para priorizar las que esten encendidas
+    redes_visibles = set()
+    try:
+        escaneo = wifi.scan()
+        for r in escaneo:
+            try:
+                redes_visibles.add(r[0].decode("utf-8"))
+            except Exception:
+                pass
+    except Exception:
+        pass
+
+    # Filtrar primero las redes que aparecen en el escaneo; si no aparece ninguna, probar todas
+    candidatas = [ item for item in redes if item[0] in redes_visibles ]
+    if not candidatas:
+        candidatas = redes
+
+    for ssid, clave in candidatas:
+        print("Conectando a WiFi:", ssid, end="")
         try:
-            wifi.connect(config.WIFI_NOMBRE, config.WIFI_CLAVE)
+            wifi.disconnect()
         except Exception:
-            wifi_disponible = False
-            return False
+            pass
+        try:
+            wifi.connect(ssid, clave)
+        except Exception:
+            continue
+
         intentos = 0
-        while not wifi.isconnected():
+        while not wifi.isconnected() and intentos < 16:
             print(".", end="")
             time.sleep(0.5)
             intentos += 1
-            if intentos > 16:
-                print("\nWiFi no encontrado. Funcionando en Modo Cable USB Directo.")
-                wifi_disponible = False
-                return False
-    print("\nConectado! IP del ESP32:", wifi.ifconfig()[0])
-    wifi_disponible = True
-    return True
+
+        if wifi.isconnected():
+            print("\nConectado a " + ssid + "! IP del ESP32:", wifi.ifconfig()[0])
+            print("Servidor destino:", config.SERVIDOR)
+            wifi_disponible = True
+            return True
+        else:
+            print("\nNo se pudo conectar a", ssid)
+
+    print("WiFi no disponible por ahora. Funcionando en Modo Cable USB Directo.")
+    wifi_disponible = False
+    return False
 
 
 def leer_tarjeta():
@@ -87,7 +137,7 @@ def enviar_uid(uid):
         # mostrar quien entra
         print("-------------------------------")
         if datos.get("ok"):
-            print(">> ACCESO PERMITIDO")
+            print(">> ACCESO PERMITIDO (Wi-Fi -> Azure)")
             print(">> " + datos.get("mensaje", ""))
             if datos.get("rol"):
                 print(">> Rol: " + datos.get("rol"))
@@ -95,7 +145,7 @@ def enviar_uid(uid):
             time.sleep(1)
             led.off()
         else:
-            print(">> ACCESO DENEGADO")
+            print(">> ACCESO DENEGADO (Wi-Fi -> Azure)")
             print(">> " + datos.get("mensaje", ""))
             parpadear(3)
         print("-------------------------------")
@@ -120,8 +170,12 @@ while True:
         time.sleep(0.2)
         led.off()
 
-        # 2. Si el WiFi esta conectado, tambien lo envia por red al servidor
-        if wifi_disponible and network.WLAN(network.STA_IF).isconnected():
+        # 2. Si el WiFi no estaba conectado al inicio, reintenta conectar antes de enviar
+        if not wifi.isconnected() and (time.time() - ultimo_intento_wifi) > 15:
+            conectar_wifi()
+
+        # 3. Si el WiFi esta conectado, tambien lo envia por red al servidor en Azure
+        if wifi.isconnected():
             enviar_uid(uid)
 
         time.sleep(1.3)  # para no leer la misma tarjeta varias veces

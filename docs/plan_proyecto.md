@@ -180,6 +180,18 @@ Objetivo: Lograr que el Médico y el Paciente conectados desde distintos navegad
 - [x] **8.3.1 Firmware MicroPython en ESP32 y Esquema de Base de Datos RFID:** Integrar `esp32/mfrc522.py`, `esp32/config.py`, `esp32/main.py` y las tablas `tarjetas_rfid` y `accesos_rfid` en PostgreSQL con zona horaria `America/Guatemala`.
 - [x] **8.3.2 Backend y Frontend RFID en Modo Híbrido (Wi-Fi + Cable USB Web Serial):** Integrar rutas `/api/rfid`, login automático por tarjeta en `LectorRfid.jsx` y panel de vinculación/bitácora en `TarjetaRfid.jsx` funcionando tanto por Wi-Fi como por Cable USB directo (`lectorSerialRfid.js`).
 
+### Módulo 8.4: Inicio de Sesión Remoto Multicomputadora por Wi-Fi (Manteniendo Conexión USB)
+*Rama de Git asignada:* `feature/rfid-esp32`
+
+- [x] **8.4.1 Configuración Multi-WiFi (Hotspot `iPhone 17e` + Red Local) y Enlace Directo a Azure en el ESP32:** Actualizar `esp32/config.py` (localmente con las credenciales `iPhone 17e` / `adami-23` y la URL de Azure `http://20.115.129.185/api/rfid/lectura`) y mejorar `esp32/main.py` para que intente conectarse automáticamente a cualquiera de las redes Wi-Fi configuradas sin desactivar la salida simultánea por cable USB.
+  - *Prueba de verificación:* Encender el Hotspot del `iPhone 17e`, cargar el script al ESP32 con `mpremote` y verificar en consola que muestra `Conectado a iPhone 17e` y que al acercar una tarjeta recibe respuesta HTTP desde el servidor de Azure además de imprimir el UID por USB.
+- [x] **8.4.2 Direccionamiento de Lectura Wi-Fi por Computadora en el Backend:** Agregar en `backend/src/controllers/rfidController.js` y `backend/src/routes/rfidRoutes.js` el endpoint `POST /api/rfid/esperar-wifi` y soporte de `clienteId` en `GET /api/rfid/estado`, para que cuando una computadora active la espera por Wi-Fi, la próxima lectura de tarjeta le abra sesión exclusivamente a esa computadora sin interferir con otras PCs abiertas.
+  - *Prueba de verificación:* Activar `POST /api/rfid/esperar-wifi` con un `clienteId`, escanear una tarjeta y comprobar que solo ese `clienteId` recibe el token de acceso en `GET /api/rfid/estado`.
+- [x] **8.4.3 Botón de Recepción por Wi-Fi en Frontend sin Paréntesis ni Emojis:** Actualizar `frontend/src/components/LectorRfid.jsx` y `frontend/src/components/TarjetaRfid.jsx` para incluir el botón `Conectar WiFi` / `WiFi Activo` junto al botón `Conectar USB`, eliminando todos los paréntesis y emojis de los textos de la interfaz RFID.
+  - *Prueba de verificación:* Compilar el frontend con `npm run build` sin errores y verificar en pantalla que aparecen ambos botones (`Conectar WiFi` y `Conectar USB`) con textos limpios sin paréntesis ni emojis.
+- [ ] **8.4.4 Actualización del Servidor en Microsoft Azure y Prueba Multicomputadora en Vivo:** Desplegar los cambios en los contenedores de la máquina virtual `vm-novasalud` en Azure y realizar la prueba de inicio de sesión remoto desde otro dispositivo.
+  - *Prueba de verificación:* Con el ESP32 conectado al internet del `iPhone 17e`, abrir `https://novasalud-umg.westus2.cloudapp.azure.com` en otra computadora o celular sin cable USB, activar `Conectar WiFi`, pasar la tarjeta física y comprobar que inicia sesión automáticamente en ese dispositivo.
+
 ---
 
 ## Fase 9: Preparación para Producción, CI/CD con GitHub Actions y Despliegue en Azure (Al Final)

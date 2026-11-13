@@ -1,7 +1,5 @@
-// Lector RFID en la pantalla de Login
-// Funciona tanto por Wi-Fi como por Cable USB directo (Web Serial API)
 import React, { useEffect, useState } from 'react';
-import { CreditCard, CheckCircle2, XCircle, Usb } from 'lucide-react';
+import { CreditCard, CheckCircle2, XCircle, Usb, Wifi } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
 import { api } from '../services/api';
@@ -12,13 +10,24 @@ import {
   suscribirEstadoSerialRfid
 } from '../utils/lectorSerialRfid';
 
+const obtenerClienteId = () => {
+  let id = localStorage.getItem('rfid_cliente_id');
+  if (!id) {
+    id = 'cli_' + Math.random().toString(36).substring(2, 10);
+    localStorage.setItem('rfid_cliente_id', id);
+  }
+  return id;
+};
+
 export default function LectorRfid({ onRolDetectado }) {
-  const [estado, setEstado] = useState('esperando'); // esperando | ok | invalida
+  const [estado, setEstado] = useState('esperando');
   const [mensaje, setMensaje] = useState('Acerque su tarjeta al lector para ingresar');
   const [rolDetectado, setRolDetectado] = useState('');
   const [usbConectado, setUsbConectado] = useState(false);
+  const [wifiActivo, setWifiActivo] = useState(false);
   const navigate = useNavigate();
   const { login } = useAuth();
+  const clienteId = obtenerClienteId();
 
   useEffect(() => {
     const cancelar = suscribirEstadoSerialRfid(setUsbConectado);
@@ -31,7 +40,8 @@ export default function LectorRfid({ onRolDetectado }) {
     const revisar = async () => {
       if (entrando) return;
       try {
-        const res = await api.get('/rfid/estado');
+        const url = '/rfid/estado?clienteId=' + encodeURIComponent(clienteId);
+        const res = await api.get(url);
 
         if (res.estado === 'ok') {
           entrando = true;
@@ -44,7 +54,6 @@ export default function LectorRfid({ onRolDetectado }) {
           setEstado('ok');
           setMensaje(`Bienvenido, ${nombre || res.usuario?.correo}`);
 
-          // esperamos un momento para que se vea quien entro
           setTimeout(() => {
             login(res.token, res.usuario, false);
             navigate('/dashboard', { replace: true });
@@ -52,20 +61,20 @@ export default function LectorRfid({ onRolDetectado }) {
         } else if (res.estado === 'invalida') {
           setRolDetectado('');
           setEstado('invalida');
-          setMensaje(`Tarjeta no registrada (${res.uid})`);
+          setMensaje(`Tarjeta no registrada: ${res.uid}`);
           setTimeout(() => {
             setEstado('esperando');
             setMensaje('Acerque su tarjeta al lector para ingresar');
           }, 3000);
         }
       } catch {
-        // si el servidor no responde no hacemos nada, se vuelve a intentar
+        // En caso de corte momentaneo de red se continua la espera
       }
     };
 
     const intervalo = setInterval(revisar, 1000);
     return () => clearInterval(intervalo);
-  }, [login, navigate, onRolDetectado]);
+  }, [clienteId, login, navigate, onRolDetectado]);
 
   const handleToggleUsb = async () => {
     try {
@@ -75,7 +84,23 @@ export default function LectorRfid({ onRolDetectado }) {
         await conectarSerialRfid();
       }
     } catch {
-      // Usuario cancelo el selector de puerto o el puerto esta ocupado
+      // El usuario cancelo la seleccion de puerto
+    }
+  };
+
+  const handleToggleWifi = async () => {
+    try {
+      if (wifiActivo) {
+        await api.post('/rfid/cancelar-wifi', { clienteId });
+        setWifiActivo(false);
+        setMensaje('Acerque su tarjeta al lector para ingresar');
+      } else {
+        await api.post('/rfid/esperar-wifi', { clienteId });
+        setWifiActivo(true);
+        setMensaje('Esperando lectura remota por red WiFi');
+      }
+    } catch {
+      // Error de red al solicitar espera remota
     }
   };
 
@@ -95,7 +120,11 @@ export default function LectorRfid({ onRolDetectado }) {
           <p className="font-semibold truncate">{estado === 'esperando' ? 'Ingreso con tarjeta' : mensaje}</p>
           {estado === 'esperando' && (
             <p className="text-xs text-slate-500 truncate">
-              {usbConectado ? 'Lector conectado por USB y Wi-Fi activo' : mensaje}
+              {usbConectado
+                ? 'Lector conectado por cable USB'
+                : wifiActivo
+                ? 'Recepción activa por red WiFi'
+                : mensaje}
             </p>
           )}
         </div>
@@ -106,34 +135,37 @@ export default function LectorRfid({ onRolDetectado }) {
           {rolDetectado === 'MEDICO' ? 'MÉDICO' : rolDetectado === 'PACIENTE' ? 'PACIENTE' : rolDetectado}
         </span>
       ) : (
-        esWebSerialSoportado() && (
+        <div className="flex items-center gap-2 shrink-0">
           <button
             type="button"
-            onClick={handleToggleUsb}
-            title={
-              usbConectado
-                ? 'Lector conectado por cable USB (clic para desconectar)'
-                : 'Conectar lector directamente por cable USB (sin necesidad de Wi-Fi)'
-            }
-            className={`px-2.5 py-1.5 rounded-lg text-xs font-semibold border flex items-center gap-1.5 shrink-0 transition-all cursor-pointer ${
-              usbConectado
-                ? 'bg-emerald-50 text-emerald-700 border-emerald-200 hover:bg-emerald-100'
+            onClick={handleToggleWifi}
+            title={wifiActivo ? 'Desactivar escucha remota por WiFi' : 'Activar inicio de sesion remoto mediante red WiFi'}
+            className={`px-2.5 py-1.5 rounded-lg text-xs font-semibold border flex items-center gap-1.5 transition-all cursor-pointer ${
+              wifiActivo
+                ? 'bg-teal-50 text-teal-700 border-teal-300 hover:bg-teal-100'
                 : 'bg-white text-slate-600 border-slate-200 hover:bg-slate-100'
             }`}
           >
-            {usbConectado ? (
-              <>
-                <span className="w-2 h-2 rounded-full bg-emerald-500 animate-pulse"></span>
-                <span>USB Activo</span>
-              </>
-            ) : (
-              <>
-                <Usb className="w-3.5 h-3.5 text-teal-600" />
-                <span>Conectar USB</span>
-              </>
-            )}
+            <Wifi className="w-3.5 h-3.5 text-teal-600" />
+            <span>{wifiActivo ? 'WiFi Activo' : 'Conectar WiFi'}</span>
           </button>
-        )
+
+          {esWebSerialSoportado() && (
+            <button
+              type="button"
+              onClick={handleToggleUsb}
+              title={usbConectado ? 'Desconectar cable USB' : 'Conectar directamente por cable USB'}
+              className={`px-2.5 py-1.5 rounded-lg text-xs font-semibold border flex items-center gap-1.5 transition-all cursor-pointer ${
+                usbConectado
+                  ? 'bg-emerald-50 text-emerald-700 border-emerald-200 hover:bg-emerald-100'
+                  : 'bg-white text-slate-600 border-slate-200 hover:bg-slate-100'
+              }`}
+            >
+              <Usb className="w-3.5 h-3.5 text-teal-600" />
+              <span>{usbConectado ? 'USB Activo' : 'Conectar USB'}</span>
+            </button>
+          )}
+        </div>
       )}
     </div>
   );

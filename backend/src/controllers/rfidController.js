@@ -8,9 +8,10 @@ const userRepository = require('../repositories/userRepository');
 const CLAVE_ESP32 = process.env.RFID_CLAVE || 'clave_esp32_123';
 
 // Variables en memoria
-let ultimaLectura = null;    // { uid, hora } -> ultima tarjeta que paso por el lector para login
+let ultimaLectura = null;    // { uid, hora, destinatarioClienteId } -> ultima tarjeta que paso por el lector para login
 let modoRegistro = null;     // { id_usuario, hora } -> alguien esta registrando su tarjeta
 let ultimaProcesada = null;  // { uid, hora, respuesta } -> evita duplicados si Wi-Fi y USB reportan al mismo tiempo
+let esperaWifi = null;       // { clienteId, hora } -> computadora especifica que activo el modo recepcion por Wi-Fi
 
 const esReciente = (hora, segundos) => (Date.now() - hora) < segundos * 1000;
 
@@ -47,7 +48,13 @@ const procesarUidTarjeta = async (uid) => {
     }
 
     // 2. Si no, es un intento de inicio de sesion
-    ultimaLectura = { uid, hora: Date.now() };
+    let destinatario = null;
+    if (esperaWifi && esReciente(esperaWifi.hora, 30)) {
+        destinatario = esperaWifi.clienteId;
+        esperaWifi = null; // consumido para esta lectura
+    }
+
+    ultimaLectura = { uid, hora: Date.now(), destinatarioClienteId: destinatario };
 
     const usuario = await rfidRepository.buscarUsuarioPorTarjeta(uid);
     if (!usuario) {
@@ -116,6 +123,13 @@ const estadoLogin = async (req, res) => {
             return res.json({ estado: 'esperando' });
         }
 
+        const clienteId = req.query.clienteId ? String(req.query.clienteId).trim() : null;
+
+        // Si la lectura va dirigida a otra computadora especifica, esta computadora sigue esperando
+        if (ultimaLectura.destinatarioClienteId && clienteId && ultimaLectura.destinatarioClienteId !== clienteId) {
+            return res.json({ estado: 'esperando' });
+        }
+
         const uid = ultimaLectura.uid;
         ultimaLectura = null; // se usa una sola vez
 
@@ -137,6 +151,29 @@ const estadoLogin = async (req, res) => {
         console.error('Error en estado RFID:', error.message);
         res.status(500).json({ estado: 'error', error: 'Error interno del servidor' });
     }
+};
+
+// ======================================================
+// POST /api/rfid/esperar-wifi -> una computadora activa la recepcion remota por 30s
+// ======================================================
+const activarEsperaWifi = (req, res) => {
+    const clienteId = String(req.body.clienteId || '').trim();
+    if (!clienteId) {
+        return res.status(400).json({ ok: false, mensaje: 'clienteId requerido' });
+    }
+    esperaWifi = { clienteId, hora: Date.now() };
+    res.json({ ok: true, mensaje: 'Modo recepcion WiFi activo', clienteId, expiraEnSegundos: 30 });
+};
+
+// ======================================================
+// POST /api/rfid/cancelar-wifi -> cancela la recepcion remota de esta computadora
+// ======================================================
+const cancelarEsperaWifi = (req, res) => {
+    const clienteId = String(req.body.clienteId || '').trim();
+    if (esperaWifi && (!clienteId || esperaWifi.clienteId === clienteId)) {
+        esperaWifi = null;
+    }
+    res.json({ ok: true, mensaje: 'Modo recepcion WiFi cancelado' });
 };
 
 // ======================================================
@@ -192,6 +229,8 @@ module.exports = {
     recibirLectura,
     recibirLecturaUsb,
     estadoLogin,
+    activarEsperaWifi,
+    cancelarEsperaWifi,
     miTarjeta,
     iniciarRegistro,
     reportarPerdida,
